@@ -1,3 +1,6 @@
 name = "pi4-frontend-camelbox"
 pages_build_output_dir = "dist"
 compatibility_date = "2026-04-19"
+
+[assets]
+not_found_handling = "single-page-application"
