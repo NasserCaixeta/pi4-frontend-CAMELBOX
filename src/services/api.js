@@ -7,7 +7,7 @@ async function request(method, path, body) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${BASE_URL}/api${path}`, {
+  const res = await fetch(`${BASE_URL}${path}`, {
     method,
     headers,
     body: body ? JSON.stringify(body) : undefined,
