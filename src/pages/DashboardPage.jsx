@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line, CartesianGrid,
+  PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
 } from "recharts";
 import { useAuth } from "../context/AuthContext";
-import { MONTHLY_DATA, PERIODS, TRANSACTIONS } from "../data/mockData";
+import useDashboard from "../hooks/useDashboard";
+import UploadCard from "../components/UploadCard";
 
 // ─── Theme ──────────────────────────────────────────────────────────────────
 const C = {
@@ -25,31 +25,27 @@ const C = {
   successBg:    "rgba(90,154,106,0.12)",
   danger:       "#C0503A",
   dangerBg:     "rgba(192,80,58,0.12)",
-  // Category colors
   cat: {
-    Alimentação:  "#D4A843",
-    Moradia:      "#5A9A6A",
-    Transporte:   "#4A8DB5",
-    Lazer:        "#9B6DB5",
-    Saúde:        "#C0703A",
-    Outros:       "#6A7A6A",
+    "Alimentação": "#D4A843",
+    "Moradia":     "#5A9A6A",
+    "Transporte":  "#4A8DB5",
+    "Lazer":       "#9B6DB5",
+    "Saúde":       "#C0703A",
+    "Outros":      "#6A7A6A",
   },
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 const fmt = (v) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
-const fmtK = (v) =>
-  v >= 1000 ? `R$ ${(v / 1000).toFixed(1)}k` : `R$ ${v}`;
-const pct = (curr, prev) =>
-  prev === 0 ? 0 : (((curr - prev) / prev) * 100).toFixed(1);
+
+const getCatColor = (name) => C.cat[name] || "#6A7A6A";
 
 // ─── Base UI ─────────────────────────────────────────────────────────────────
 const Card = ({ children, style }) => (
   <div style={{
     background: C.card, border: `1px solid ${C.border}`,
-    borderRadius: 16, padding: "1.25rem",
-    ...style,
+    borderRadius: 16, padding: "1.25rem", ...style,
   }}>
     {children}
   </div>
@@ -62,10 +58,11 @@ const SectionTitle = ({ children }) => (
   </div>
 );
 
-// ─── Summary Card ─────────────────────────────────────────────────────────────
+// ─── Summary Card ────────────────────────────────────────────────────────────
 function SummaryCard({ label, value, change, positive, icon }) {
-  const up = parseFloat(change) >= 0;
-  const isGood = positive ? up : !up;
+  const hasChange = change !== null && change !== undefined;
+  const up = hasChange && parseFloat(change) >= 0;
+  const isGood = hasChange && (positive ? up : !up);
   return (
     <Card style={{ flex: 1, minWidth: 200 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -79,11 +76,13 @@ function SummaryCard({ label, value, change, positive, icon }) {
         letterSpacing: "-0.5px", margin: "0.5rem 0 0.4rem" }}>
         {fmt(value)}
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 4,
-        fontSize: 12, color: isGood ? C.success : C.danger }}>
-        <span>{up ? "▲" : "▼"}</span>
-        <span>{Math.abs(change)}% vs mês anterior</span>
-      </div>
+      {hasChange && (
+        <div style={{ display: "flex", alignItems: "center", gap: 4,
+          fontSize: 12, color: isGood ? C.success : C.danger }}>
+          <span>{up ? "▲" : "▼"}</span>
+          <span>{Math.abs(change)}% vs mês anterior</span>
+        </div>
+      )}
     </Card>
   );
 }
@@ -111,7 +110,7 @@ function DonutChart({ data }) {
             <Pie data={data} cx="50%" cy="50%" innerRadius={48} outerRadius={72}
               dataKey="value" strokeWidth={0}>
               {data.map((entry) => (
-                <Cell key={entry.name} fill={C.cat[entry.name] || C.textDim} />
+                <Cell key={entry.name} fill={getCatColor(entry.name)} />
               ))}
             </Pie>
             <Tooltip content={<CustomDonutTooltip />} />
@@ -123,11 +122,11 @@ function DonutChart({ data }) {
               justifyContent: "space-between", gap: 8 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                 <div style={{ width: 8, height: 8, borderRadius: "50%",
-                  background: C.cat[d.name], flexShrink: 0 }} />
+                  background: getCatColor(d.name), flexShrink: 0 }} />
                 <span style={{ fontSize: 12, color: C.textMuted }}>{d.name}</span>
               </div>
               <span style={{ fontSize: 12, color: C.text, fontWeight: 500 }}>
-                {((d.value / total) * 100).toFixed(0)}%
+                {total > 0 ? ((d.value / total) * 100).toFixed(0) : 0}%
               </span>
             </div>
           ))}
@@ -137,83 +136,23 @@ function DonutChart({ data }) {
   );
 }
 
-// ─── Grouped Bar ─────────────────────────────────────────────────────────────
-const BarTooltip = ({ active, payload, label }) => {
-  if (!active || !payload?.length) return null;
-  return (
-    <div style={{ background: C.surface, border: `1px solid ${C.border}`,
-      borderRadius: 8, padding: "8px 12px", fontSize: 12, color: C.text }}>
-      <div style={{ marginBottom: 4, color: C.textMuted }}>{label}</div>
-      {payload.map((p) => (
-        <div key={p.name} style={{ color: p.color }}>
-          {p.name}: {fmtK(p.value)}
-        </div>
-      ))}
-    </div>
-  );
-};
-
-function GroupedBarChart({ data }) {
-  return (
-    <Card style={{ flex: 2, minWidth: 320 }}>
-      <SectionTitle>Receitas vs Despesas por Mês</SectionTitle>
-      <ResponsiveContainer width="100%" height={200}>
-        <BarChart data={data} barGap={4} barCategoryGap="30%">
-          <XAxis dataKey="name" tick={{ fill: C.textMuted, fontSize: 11 }}
-            axisLine={false} tickLine={false} />
-          <YAxis tickFormatter={fmtK} tick={{ fill: C.textMuted, fontSize: 10 }}
-            axisLine={false} tickLine={false} width={52} />
-          <Tooltip content={<BarTooltip />} cursor={{ fill: "rgba(255,255,255,0.04)" }} />
-          <Bar dataKey="receitas" name="Receitas" fill={C.success} radius={[4, 4, 0, 0]} />
-          <Bar dataKey="despesas" name="Despesas" fill={C.danger}  radius={[4, 4, 0, 0]} />
-        </BarChart>
-      </ResponsiveContainer>
-    </Card>
-  );
-}
-
-// ─── Line Chart ──────────────────────────────────────────────────────────────
-function SaldoLineChart({ data }) {
-  return (
-    <Card style={{ flex: 2, minWidth: 320 }}>
-      <SectionTitle>Evolução do Saldo</SectionTitle>
-      <ResponsiveContainer width="100%" height={200}>
-        <LineChart data={data}>
-          <CartesianGrid stroke={C.border} strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="name" tick={{ fill: C.textMuted, fontSize: 11 }}
-            axisLine={false} tickLine={false} />
-          <YAxis tickFormatter={fmtK} tick={{ fill: C.textMuted, fontSize: 10 }}
-            axisLine={false} tickLine={false} width={52} />
-          <Tooltip content={<BarTooltip />} cursor={{ stroke: C.amber, strokeWidth: 1 }} />
-          <Line type="monotone" dataKey="saldo" name="Saldo" stroke={C.amber}
-            strokeWidth={2} dot={{ fill: C.amber, r: 4, strokeWidth: 0 }}
-            activeDot={{ r: 6, fill: C.amberLight }} />
-        </LineChart>
-      </ResponsiveContainer>
-    </Card>
-  );
-}
-
 // ─── Horizontal Bar ──────────────────────────────────────────────────────────
 function HorizontalBarChart({ data }) {
-  const max = Math.max(...data.map((d) => d.value));
+  const max = Math.max(...data.map((d) => d.value), 1);
   return (
     <Card style={{ flex: 1, minWidth: 240 }}>
       <SectionTitle>Top Categorias de Gasto</SectionTitle>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {data.map((d) => (
           <div key={d.name}>
-            <div style={{ display: "flex", justifyContent: "space-between",
-              marginBottom: 4 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
               <span style={{ fontSize: 12, color: C.textMuted }}>{d.name}</span>
-              <span style={{ fontSize: 12, color: C.text, fontWeight: 500 }}>
-                {fmt(d.value)}
-              </span>
+              <span style={{ fontSize: 12, color: C.text, fontWeight: 500 }}>{fmt(d.value)}</span>
             </div>
             <div style={{ background: C.border, borderRadius: 4, height: 6 }}>
               <div style={{
                 width: `${(d.value / max) * 100}%`, height: "100%",
-                background: C.cat[d.name], borderRadius: 4,
+                background: getCatColor(d.name), borderRadius: 4,
                 transition: "width 0.5s ease",
               }} />
             </div>
@@ -224,8 +163,19 @@ function HorizontalBarChart({ data }) {
   );
 }
 
-// ─── Transactions Table ───────────────────────────────────────────────────────
-function TransactionsTable() {
+// ─── Transactions Table ──────────────────────────────────────────────────────
+function TransactionsTable({ transactions }) {
+  if (!transactions?.items?.length) {
+    return (
+      <Card>
+        <SectionTitle>Transações Recentes</SectionTitle>
+        <div style={{ fontSize: 13, color: C.textMuted, padding: "1rem 0" }}>
+          Nenhuma transação encontrada neste período.
+        </div>
+      </Card>
+    );
+  }
+
   return (
     <Card>
       <SectionTitle>Transações Recentes</SectionTitle>
@@ -236,42 +186,43 @@ function TransactionsTable() {
               {["Descrição", "Categoria", "Data", "Valor"].map((h) => (
                 <th key={h} style={{ textAlign: "left", padding: "0 8px 10px",
                   color: C.textMuted, fontWeight: 500, fontSize: 11,
-                  letterSpacing: "0.4px", textTransform: "uppercase",
-                  whiteSpace: "nowrap" }}>
+                  letterSpacing: "0.4px", textTransform: "uppercase", whiteSpace: "nowrap" }}>
                   {h}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {TRANSACTIONS.map((t) => (
-              <tr key={t.id} style={{ borderBottom: `1px solid ${C.border}` }}
-                onMouseEnter={(e) => e.currentTarget.style.background = C.surface}
-                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
-                <td style={{ padding: "10px 8px", color: C.text, fontWeight: 500 }}>
-                  {t.desc}
-                </td>
-                <td style={{ padding: "10px 8px" }}>
-                  <span style={{
-                    display: "inline-flex", alignItems: "center", gap: 5,
-                    fontSize: 11, fontWeight: 500, padding: "3px 8px",
-                    borderRadius: 20,
-                    background: `${C.cat[t.categoria]}20`,
-                    color: C.cat[t.categoria],
-                  }}>
-                    {t.categoria}
-                  </span>
-                </td>
-                <td style={{ padding: "10px 8px", color: C.textMuted, whiteSpace: "nowrap" }}>
-                  {t.data}
-                </td>
-                <td style={{ padding: "10px 8px", fontWeight: 600,
-                  color: t.tipo === "credit" ? C.success : C.danger,
-                  textAlign: "right", whiteSpace: "nowrap" }}>
-                  {t.tipo === "credit" ? "+" : ""}{fmt(t.valor)}
-                </td>
-              </tr>
-            ))}
+            {transactions.items.map((t) => {
+              const catName = t.category?.name || "Sem categoria";
+              const formattedDate = new Date(t.date + 'T00:00:00').toLocaleDateString('pt-BR');
+              return (
+                <tr key={t.id} style={{ borderBottom: `1px solid ${C.border}` }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = C.surface}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
+                  <td style={{ padding: "10px 8px", color: C.text, fontWeight: 500 }}>
+                    {t.description || "—"}
+                  </td>
+                  <td style={{ padding: "10px 8px" }}>
+                    <span style={{
+                      display: "inline-flex", alignItems: "center", gap: 5,
+                      fontSize: 11, fontWeight: 500, padding: "3px 8px", borderRadius: 20,
+                      background: `${getCatColor(catName)}20`, color: getCatColor(catName),
+                    }}>
+                      {catName}
+                    </span>
+                  </td>
+                  <td style={{ padding: "10px 8px", color: C.textMuted, whiteSpace: "nowrap" }}>
+                    {formattedDate}
+                  </td>
+                  <td style={{ padding: "10px 8px", fontWeight: 600,
+                    color: t.type === "credit" ? C.success : C.danger,
+                    textAlign: "right", whiteSpace: "nowrap" }}>
+                    {t.type === "credit" ? "+" : "-"}{fmt(t.amount)}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -280,34 +231,37 @@ function TransactionsTable() {
 }
 
 // ─── Period Comparison ────────────────────────────────────────────────────────
-function PeriodComparison({ curr, prev }) {
-  const cats = Object.keys(curr.categorias);
+function PeriodComparison({ categories }) {
+  if (!categories?.categories?.length) return null;
+
   return (
     <Card>
       <SectionTitle>Comparativo com Período Anterior</SectionTitle>
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
-        {cats.map((cat) => {
-          const c = curr.categorias[cat];
-          const p = prev.categorias[cat];
-          const diff = parseFloat(pct(c, p));
-          const isGood = diff < 0;
+        {categories.categories.map((item) => {
+          const catName = item.category?.name || "Sem categoria";
+          const change = item.comparison?.change_percent;
+          const hasChange = change !== null && change !== undefined;
+          const isGood = hasChange && change < 0;
           return (
-            <div key={cat} style={{
+            <div key={catName} style={{
               background: C.surface, borderRadius: 10,
               padding: "10px 12px", border: `1px solid ${C.border}`,
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
                 <div style={{ width: 8, height: 8, borderRadius: "50%",
-                  background: C.cat[cat], flexShrink: 0 }} />
-                <span style={{ fontSize: 11, color: C.textMuted }}>{cat}</span>
+                  background: getCatColor(catName), flexShrink: 0 }} />
+                <span style={{ fontSize: 11, color: C.textMuted }}>{catName}</span>
               </div>
               <div style={{ fontSize: 14, fontWeight: 600, color: C.text }}>
-                {fmt(c)}
+                {fmt(item.total)}
               </div>
-              <div style={{ fontSize: 11, marginTop: 2,
-                color: isGood ? C.success : C.danger }}>
-                {diff > 0 ? "▲" : "▼"} {Math.abs(diff)}%
-              </div>
+              {hasChange && (
+                <div style={{ fontSize: 11, marginTop: 2,
+                  color: isGood ? C.success : C.danger }}>
+                  {change > 0 ? "▲" : "▼"} {Math.abs(change)}%
+                </div>
+              )}
             </div>
           );
         })}
@@ -316,46 +270,104 @@ function PeriodComparison({ curr, prev }) {
   );
 }
 
-// ─── Main Dashboard ───────────────────────────────────────────────────────────
+// ─── Main Dashboard ──────────────────────────────────────────────────────────
 export default function DashboardPage() {
-  const [selectedPeriod, setSelectedPeriod] = useState("Jun/2025");
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [selectedMonth, setSelectedMonth] = useState(null);
+  const [selectedYear, setSelectedYear] = useState(null);
+
+  const {
+    summary, categories, transactions, statements,
+    availableMonths, loading, error, refresh,
+  } = useDashboard(selectedMonth, selectedYear);
+
+  // Auto-select most recent month when availableMonths loads
+  useEffect(() => {
+    if (availableMonths.length > 0 && selectedMonth === null) {
+      const latest = availableMonths[availableMonths.length - 1];
+      setSelectedMonth(latest.month);
+      setSelectedYear(latest.year);
+    }
+  }, [availableMonths, selectedMonth]);
 
   const handleLogout = () => {
     logout();
     navigate('/auth');
   };
 
-  const periodIndex = PERIODS.indexOf(selectedPeriod);
-  const curr = MONTHLY_DATA[selectedPeriod];
-  const prev = MONTHLY_DATA[PERIODS[periodIndex - 1]] || curr;
+  const handleUploadComplete = () => {
+    refresh();
+  };
 
-  const saldo = curr.receitas - curr.despesas;
-  const prevSaldo = prev.receitas - prev.despesas;
+  const hasData = statements?.some((s) => s.status === 'completed');
 
-  const donutData = Object.entries(curr.categorias).map(([name, value]) => ({
-    name, value,
-  }));
+  // ─── Loading state ───
+  if (loading && !statements) {
+    return (
+      <div style={{
+        minHeight: "100vh", background: C.bg, display: "flex",
+        alignItems: "center", justifyContent: "center",
+        fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif", color: C.text,
+      }}>
+        <div style={{ fontSize: 16, color: C.textMuted }}>Carregando...</div>
+      </div>
+    );
+  }
 
-  const barData = PERIODS.map((p) => ({
-    name: p.replace("/2025", ""),
-    receitas: MONTHLY_DATA[p].receitas,
-    despesas: MONTHLY_DATA[p].despesas,
-  }));
+  // ─── Empty state ───
+  if (!hasData) {
+    return (
+      <div style={{
+        minHeight: "100vh", background: C.bg, padding: "1.5rem 2rem",
+        fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif", color: C.text,
+      }}>
+        {/* Minimal header */}
+        <div style={{ display: "flex", alignItems: "center",
+          justifyContent: "space-between", marginBottom: "2rem" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <div style={{ width: 36, height: 36, background: C.amber,
+              borderRadius: 9, display: "flex", alignItems: "center",
+              justifyContent: "center", fontSize: 18 }}>
+              🐪
+            </div>
+            <div>
+              <div style={{ fontSize: 18, fontWeight: 700 }}>CamelBox</div>
+              <div style={{ fontSize: 12, color: C.textMuted }}>Análise Financeira</div>
+            </div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontSize: 13, color: C.textMuted }}>
+              {user?.name || user?.email}
+            </span>
+            <button onClick={handleLogout} style={{
+              padding: "6px 14px", borderRadius: 8,
+              border: `1px solid ${C.amber}`, background: "transparent",
+              color: C.amber, fontSize: 12, fontWeight: 500,
+              cursor: "pointer", fontFamily: "inherit",
+            }}>
+              Sair
+            </button>
+          </div>
+        </div>
 
-  const lineData = PERIODS.map((p) => ({
-    name: p.replace("/2025", ""),
-    saldo: MONTHLY_DATA[p].receitas - MONTHLY_DATA[p].despesas,
-  }));
+        <UploadCard onUploadComplete={handleUploadComplete} />
+      </div>
+    );
+  }
+
+  // ─── Dashboard with data ───
+  const donutData = categories?.categories?.map((item) => ({
+    name: item.category?.name || "Sem categoria",
+    value: parseFloat(item.total),
+  })) || [];
 
   const hBarData = [...donutData].sort((a, b) => b.value - a.value);
 
   return (
     <div style={{
       minHeight: "100vh", background: C.bg, padding: "1.5rem 2rem",
-      fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif",
-      color: C.text,
+      fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif", color: C.text,
     }}>
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center",
@@ -380,17 +392,18 @@ export default function DashboardPage() {
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ fontSize: 12, color: C.textMuted }}>Período:</span>
             <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-              {PERIODS.map((p) => (
-                <button key={p} onClick={() => setSelectedPeriod(p)}
+              {availableMonths.map((p) => (
+                <button key={p.label}
+                  onClick={() => { setSelectedMonth(p.month); setSelectedYear(p.year); }}
                   style={{
                     padding: "5px 12px", borderRadius: 8, border: "1px solid",
-                    borderColor: selectedPeriod === p ? C.amber : C.border,
-                    background: selectedPeriod === p ? C.amberGlow : "transparent",
-                    color: selectedPeriod === p ? C.amber : C.textMuted,
+                    borderColor: selectedMonth === p.month && selectedYear === p.year ? C.amber : C.border,
+                    background: selectedMonth === p.month && selectedYear === p.year ? C.amberGlow : "transparent",
+                    color: selectedMonth === p.month && selectedYear === p.year ? C.amber : C.textMuted,
                     fontSize: 12, fontWeight: 500, cursor: "pointer",
                     fontFamily: "inherit", transition: "all 0.15s",
                   }}>
-                  {p}
+                  {p.label}
                 </button>
               ))}
             </div>
@@ -401,15 +414,12 @@ export default function DashboardPage() {
             <span style={{ fontSize: 13, color: C.textMuted }}>
               {user?.name || user?.email}
             </span>
-            <button
-              onClick={handleLogout}
-              style={{
-                padding: "6px 14px", borderRadius: 8,
-                border: `1px solid ${C.amber}`, background: "transparent",
-                color: C.amber, fontSize: 12, fontWeight: 500,
-                cursor: "pointer", fontFamily: "inherit",
-                transition: "all 0.15s",
-              }}
+            <button onClick={handleLogout} style={{
+              padding: "6px 14px", borderRadius: 8,
+              border: `1px solid ${C.amber}`, background: "transparent",
+              color: C.amber, fontSize: 12, fontWeight: 500,
+              cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
+            }}
               onMouseEnter={e => { e.currentTarget.style.background = C.amberGlow; }}
               onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
             >
@@ -419,54 +429,47 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Upload Card (compact) */}
+      <UploadCard onUploadComplete={handleUploadComplete} compact />
+
       {/* Summary Cards */}
-      <div style={{ display: "flex", gap: "1rem", marginBottom: "1.25rem",
-        flexWrap: "wrap" }}>
+      <div style={{ display: "flex", gap: "1rem", marginBottom: "1.25rem", flexWrap: "wrap" }}>
         <SummaryCard
           label="Total de Receitas"
-          value={curr.receitas}
-          change={pct(curr.receitas, prev.receitas)}
+          value={summary?.total_income || 0}
+          change={summary?.comparison?.income_change_percent ?? null}
           positive={true}
           icon="💰"
         />
         <SummaryCard
           label="Total de Despesas"
-          value={curr.despesas}
-          change={pct(curr.despesas, prev.despesas)}
+          value={summary?.total_expenses || 0}
+          change={summary?.comparison?.expenses_change_percent ?? null}
           positive={false}
           icon="💸"
         />
         <SummaryCard
           label="Saldo"
-          value={saldo}
-          change={pct(saldo, prevSaldo)}
+          value={summary?.balance || 0}
+          change={null}
           positive={true}
           icon="📊"
         />
       </div>
 
-      {/* Charts row 1 */}
-      <div style={{ display: "flex", gap: "1rem", marginBottom: "1.25rem",
-        flexWrap: "wrap" }}>
+      {/* Charts row */}
+      <div style={{ display: "flex", gap: "1rem", marginBottom: "1.25rem", flexWrap: "wrap" }}>
         <DonutChart data={donutData} />
-        <GroupedBarChart data={barData} />
-      </div>
-
-      {/* Charts row 2 */}
-      <div style={{ display: "flex", gap: "1rem", marginBottom: "1.25rem",
-        flexWrap: "wrap" }}>
-        <SaldoLineChart data={lineData} />
         <HorizontalBarChart data={hBarData} />
       </div>
 
       {/* Transactions + Comparison */}
-      <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap",
-        marginBottom: "1.25rem" }}>
+      <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginBottom: "1.25rem" }}>
         <div style={{ flex: 2, minWidth: 300 }}>
-          <TransactionsTable />
+          <TransactionsTable transactions={transactions} />
         </div>
         <div style={{ flex: 1, minWidth: 280 }}>
-          <PeriodComparison curr={curr} prev={prev} />
+          <PeriodComparison categories={categories} />
         </div>
       </div>
     </div>
