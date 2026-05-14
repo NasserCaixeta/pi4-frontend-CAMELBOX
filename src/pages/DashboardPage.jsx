@@ -6,6 +6,7 @@ import {
 import { useAuth } from "../context/AuthContext";
 import useDashboard from "../hooks/useDashboard";
 import UploadCard from "../components/UploadCard";
+import api from "../services/api";
 
 // ─── Theme ──────────────────────────────────────────────────────────────────
 const C = {
@@ -31,6 +32,11 @@ const C = {
     "Transporte":  "#4A8DB5",
     "Lazer":       "#9B6DB5",
     "Saúde":       "#C0703A",
+    "Compras":     "#F9A8D4",
+    "Assinaturas": "#8B5CF6",
+    "Educação":    "#3B82F6",
+    "Serviços":    "#10B981",
+    "Transferências": "#64748B",
     "Outros":      "#6A7A6A",
   },
 };
@@ -40,6 +46,12 @@ const fmt = (v) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
 const getCatColor = (name) => C.cat[name] || "#6A7A6A";
+
+const formatPeriod = (month, year) => {
+  const d = new Date(year, month - 1, 1);
+  const label = d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+  return label.charAt(0).toUpperCase() + label.slice(1);
+};
 
 // ─── Base UI ─────────────────────────────────────────────────────────────────
 const Card = ({ children, style }) => (
@@ -284,12 +296,22 @@ export default function DashboardPage() {
 
   // Auto-select most recent month when availableMonths loads
   useEffect(() => {
-    if (availableMonths.length > 0 && selectedMonth === null) {
+    if (availableMonths.length === 0) {
+      setSelectedMonth(null);
+      setSelectedYear(null);
+      return;
+    }
+
+    const selectedExists = availableMonths.some(
+      (p) => p.month === selectedMonth && p.year === selectedYear
+    );
+
+    if (selectedMonth === null || !selectedExists) {
       const latest = availableMonths[availableMonths.length - 1];
       setSelectedMonth(latest.month);
       setSelectedYear(latest.year);
     }
-  }, [availableMonths, selectedMonth]);
+  }, [availableMonths, selectedMonth, selectedYear]);
 
   const handleLogout = () => {
     logout();
@@ -298,6 +320,19 @@ export default function DashboardPage() {
 
   const handleUploadComplete = () => {
     refresh();
+  };
+
+  const handleDeleteMonth = async () => {
+    if (!selectedMonth || !selectedYear) return;
+
+    const label = formatPeriod(selectedMonth, selectedYear);
+    const confirmed = window.confirm(
+      `Remover todas as transações de ${label}? Esta ação não pode ser desfeita.`
+    );
+    if (!confirmed) return;
+
+    await api.delete(`/statements/month?month=${selectedMonth}&year=${selectedYear}`);
+    await refresh();
   };
 
   const hasData = statements?.some((s) => s.status === 'completed');
@@ -430,7 +465,12 @@ export default function DashboardPage() {
       </div>
 
       {/* Upload Card (compact) */}
-      <UploadCard onUploadComplete={handleUploadComplete} compact />
+      <UploadCard
+        onUploadComplete={handleUploadComplete}
+        compact
+        onDeleteMonth={handleDeleteMonth}
+        canDeleteMonth={Boolean(selectedMonth && selectedYear)}
+      />
 
       {/* Summary Cards */}
       <div style={{ display: "flex", gap: "1rem", marginBottom: "1.25rem", flexWrap: "wrap" }}>

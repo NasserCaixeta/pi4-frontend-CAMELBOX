@@ -1,4 +1,4 @@
-const BASE_URL = import.meta.env.VITE_API_URL || 'https://camelbox.up.railway.app';
+const BASE_URL = import.meta.env.VITE_API_URL || 'https://pi4-backend-pfok.onrender.com';
 
 async function handleResponse(res) {
   if (!res.ok) {

@@ -18,7 +18,7 @@ const C = {
   dangerBg: "rgba(192,80,58,0.12)",
 };
 
-export default function UploadCard({ onUploadComplete, compact = false }) {
+export default function UploadCard({ onUploadComplete, compact = false, onDeleteMonth, canDeleteMonth = false }) {
   const [status, setStatus] = useState('idle'); // idle | uploading | processing | completed | error
   const [errorMsg, setErrorMsg] = useState('');
   const [dragOver, setDragOver] = useState(false);
@@ -50,6 +50,8 @@ export default function UploadCard({ onUploadComplete, compact = false }) {
     } catch (err) {
       if (err.status === 402) {
         setErrorMsg('Limite de análises gratuitas atingido. Assine para continuar.');
+      } else if (err.status === 409) {
+        setErrorMsg('Este extrato já foi enviado anteriormente.');
       } else {
         setErrorMsg(err.message || 'Erro ao enviar arquivo');
       }
@@ -126,14 +128,26 @@ export default function UploadCard({ onUploadComplete, compact = false }) {
             <span style={{ fontSize: 13, color: C.textMuted }}>
               Envie um novo extrato para atualizar seus dados
             </span>
-            <button onClick={handleClick} style={{
-              padding: '8px 16px', borderRadius: 8,
-              border: `1px solid ${C.amber}`, background: C.amberGlow,
-              color: C.amber, fontSize: 12, fontWeight: 600,
-              cursor: 'pointer', fontFamily: 'inherit',
-            }}>
-              Enviar PDF
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {canDeleteMonth && (
+                <button onClick={onDeleteMonth} style={{
+                  padding: '8px 16px', borderRadius: 8,
+                  border: `1px solid ${C.danger}`, background: 'transparent',
+                  color: C.danger, fontSize: 12, fontWeight: 600,
+                  cursor: 'pointer', fontFamily: 'inherit',
+                }}>
+                  Remover mês
+                </button>
+              )}
+              <button onClick={handleClick} style={{
+                padding: '8px 16px', borderRadius: 8,
+                border: `1px solid ${C.amber}`, background: C.amberGlow,
+                color: C.amber, fontSize: 12, fontWeight: 600,
+                cursor: 'pointer', fontFamily: 'inherit',
+              }}>
+                Enviar PDF
+              </button>
+            </div>
           </>
         )}
 
