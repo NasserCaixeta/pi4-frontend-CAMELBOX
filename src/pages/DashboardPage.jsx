@@ -6,6 +6,8 @@ import {
 import { useAuth } from "../context/AuthContext";
 import useDashboard from "../hooks/useDashboard";
 import UploadCard from "../components/UploadCard";
+import PlansModal from "../components/PlansModal";
+import useBilling from "../hooks/useBilling";
 import api from "../services/api";
 
 // ─── Theme ──────────────────────────────────────────────────────────────────
@@ -288,6 +290,8 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [selectedYear, setSelectedYear] = useState(null);
+  const [showPlans, setShowPlans] = useState(false);
+  const { billing, checkout: handleCheckout, refresh: refreshBilling } = useBilling();
 
   const {
     summary, categories, transactions, statements,
@@ -372,6 +376,27 @@ export default function DashboardPage() {
             </div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {billing && (
+              <span style={{
+                fontSize: 11, color: C.amber, padding: "3px 10px",
+                borderRadius: 20, border: `1px solid ${C.border}`,
+                background: C.amberGlow, fontWeight: 600, textTransform: "uppercase",
+              }}>
+                {billing.plan === "free"
+                  ? `Grátis · ${billing.analyses_remaining}/${billing.analyses_limit}`
+                  : billing.plan === "super"
+                  ? `Super · ${billing.analyses_remaining}/${billing.analyses_limit}`
+                  : "Master · ∞"}
+              </span>
+            )}
+            <button onClick={() => setShowPlans(true)} style={{
+              padding: "6px 14px", borderRadius: 8,
+              border: `1px solid ${C.amber}`, background: C.amberGlow,
+              color: C.amber, fontSize: 12, fontWeight: 500,
+              cursor: "pointer", fontFamily: "inherit",
+            }}>
+              Aumentar plano
+            </button>
             <span style={{ fontSize: 13, color: C.textMuted }}>
               {user?.name || user?.email}
             </span>
@@ -386,7 +411,13 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <UploadCard onUploadComplete={handleUploadComplete} />
+        <UploadCard onUploadComplete={handleUploadComplete} onShowPlans={() => setShowPlans(true)} />
+        <PlansModal
+          open={showPlans}
+          onClose={() => setShowPlans(false)}
+          onCheckout={handleCheckout}
+          currentPlan={billing?.plan}
+        />
       </div>
     );
   }
@@ -446,6 +477,27 @@ export default function DashboardPage() {
 
           {/* User + Logout */}
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {billing && (
+              <span style={{
+                fontSize: 11, color: C.amber, padding: "3px 10px",
+                borderRadius: 20, border: `1px solid ${C.border}`,
+                background: C.amberGlow, fontWeight: 600, textTransform: "uppercase",
+              }}>
+                {billing.plan === "free"
+                  ? `Grátis · ${billing.analyses_remaining}/${billing.analyses_limit}`
+                  : billing.plan === "super"
+                  ? `Super · ${billing.analyses_remaining}/${billing.analyses_limit}`
+                  : "Master · ∞"}
+              </span>
+            )}
+            <button onClick={() => setShowPlans(true)} style={{
+              padding: "6px 14px", borderRadius: 8,
+              border: `1px solid ${C.amber}`, background: C.amberGlow,
+              color: C.amber, fontSize: 12, fontWeight: 500,
+              cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
+            }}>
+              Aumentar plano
+            </button>
             <span style={{ fontSize: 13, color: C.textMuted }}>
               {user?.name || user?.email}
             </span>
@@ -470,6 +522,7 @@ export default function DashboardPage() {
         compact
         onDeleteMonth={handleDeleteMonth}
         canDeleteMonth={Boolean(selectedMonth && selectedYear)}
+        onShowPlans={() => setShowPlans(true)}
       />
 
       {/* Summary Cards */}
@@ -512,6 +565,13 @@ export default function DashboardPage() {
           <PeriodComparison categories={categories} />
         </div>
       </div>
+
+      <PlansModal
+        open={showPlans}
+        onClose={() => setShowPlans(false)}
+        onCheckout={handleCheckout}
+        currentPlan={billing?.plan}
+      />
     </div>
   );
 }

@@ -18,9 +18,10 @@ const C = {
   dangerBg: "rgba(192,80,58,0.12)",
 };
 
-export default function UploadCard({ onUploadComplete, compact = false, onDeleteMonth, canDeleteMonth = false }) {
+export default function UploadCard({ onUploadComplete, compact = false, onDeleteMonth, canDeleteMonth = false, onShowPlans }) {
   const [status, setStatus] = useState('idle'); // idle | uploading | processing | completed | error
   const [errorMsg, setErrorMsg] = useState('');
+  const [isPaywall, setIsPaywall] = useState(false);
   const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef(null);
   const pollingRef = useRef(null);
@@ -49,11 +50,14 @@ export default function UploadCard({ onUploadComplete, compact = false, onDelete
       startPolling(statement.id);
     } catch (err) {
       if (err.status === 402) {
-        setErrorMsg('Limite de análises gratuitas atingido. Assine para continuar.');
+        setErrorMsg(err.message || 'Limite de análises atingido. Assine para continuar.');
+        setIsPaywall(true);
       } else if (err.status === 409) {
         setErrorMsg('Este extrato já foi enviado anteriormente.');
+        setIsPaywall(false);
       } else {
         setErrorMsg(err.message || 'Erro ao enviar arquivo');
+        setIsPaywall(false);
       }
       setStatus('error');
     }
@@ -104,6 +108,7 @@ export default function UploadCard({ onUploadComplete, compact = false, onDelete
   const reset = () => {
     setStatus('idle');
     setErrorMsg('');
+    setIsPaywall(false);
   };
 
   // ─── Compact layout (with data) ───
@@ -166,6 +171,15 @@ export default function UploadCard({ onUploadComplete, compact = false, onDelete
         {status === 'error' && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <span style={{ fontSize: 13, color: C.danger }}>{errorMsg}</span>
+            {isPaywall && onShowPlans && (
+              <button onClick={onShowPlans} style={{
+                padding: '6px 12px', borderRadius: 8,
+                border: `1px solid ${C.amber}`, background: C.amberGlow,
+                color: C.amber, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+              }}>
+                Ver planos
+              </button>
+            )}
             <button onClick={reset} style={{
               padding: '6px 12px', borderRadius: 8,
               border: `1px solid ${C.danger}`, background: 'transparent',
@@ -253,13 +267,24 @@ export default function UploadCard({ onUploadComplete, compact = false, onDelete
           <>
             <div style={{ fontSize: 32 }}>❌</div>
             <div style={{ fontSize: 15, color: C.danger }}>{errorMsg}</div>
-            <button onClick={(e) => { e.stopPropagation(); reset(); }} style={{
-              marginTop: 8, padding: '8px 20px', borderRadius: 8,
-              border: `1px solid ${C.danger}`, background: 'transparent',
-              color: C.danger, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
-            }}>
-              Tentar novamente
-            </button>
+            <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+              {isPaywall && onShowPlans && (
+                <button onClick={(e) => { e.stopPropagation(); onShowPlans(); }} style={{
+                  padding: '8px 20px', borderRadius: 8,
+                  border: 'none', background: C.amber, color: C.bg,
+                  fontSize: 13, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                }}>
+                  Ver planos
+                </button>
+              )}
+              <button onClick={(e) => { e.stopPropagation(); reset(); }} style={{
+                padding: '8px 20px', borderRadius: 8,
+                border: `1px solid ${C.danger}`, background: 'transparent',
+                color: C.danger, fontSize: 13, cursor: 'pointer', fontFamily: 'inherit',
+              }}>
+                Tentar novamente
+              </button>
+            </div>
           </>
         )}
       </div>
