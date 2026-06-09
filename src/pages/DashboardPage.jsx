@@ -1,14 +1,10 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import {
   PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
 } from "recharts";
-import { useAuth } from "../context/AuthContext";
 import useDashboard from "../hooks/useDashboard";
 import PeriodPicker from "../components/PeriodPicker";
 import UploadCard from "../components/UploadCard";
-import PlansModal from "../components/PlansModal";
-import useBilling from "../hooks/useBilling";
 import api from "../services/api";
 
 // ─── Theme ──────────────────────────────────────────────────────────────────
@@ -286,15 +282,11 @@ function PeriodComparison({ categories }) {
 }
 
 // ─── Main Dashboard ──────────────────────────────────────────────────────────
-export default function DashboardPage() {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
+export default function DashboardPage({ onShowPlans: onShowPlansProp }) {
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [selectedYear, setSelectedYear] = useState(null);
   const [selectedRange, setSelectedRange] = useState(null); // { startDate, endDate }
   const [periodLabel, setPeriodLabel] = useState("Selecionar período");
-  const [showPlans, setShowPlans] = useState(false);
-  const { billing, checkout: handleCheckout, refresh: refreshBilling } = useBilling();
 
   const {
     summary, categories, transactions, statements,
@@ -326,11 +318,6 @@ export default function DashboardPage() {
     }
   }, [availableMonths, selectedMonth, selectedYear, selectedRange]);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/auth');
-  };
-
   const handleUploadComplete = () => {
     refresh();
   };
@@ -355,7 +342,7 @@ export default function DashboardPage() {
   if (loading && !statements) {
     return (
       <div style={{
-        minHeight: "100vh", background: C.bg, display: "flex",
+        flex: 1, display: "flex",
         alignItems: "center", justifyContent: "center",
         fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif", color: C.text,
       }}>
@@ -368,66 +355,10 @@ export default function DashboardPage() {
   if (!hasData) {
     return (
       <div style={{
-        minHeight: "100vh", background: C.bg, padding: "1.5rem 2rem",
+        padding: "1.5rem 2rem",
         fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif", color: C.text,
       }}>
-        {/* Minimal header */}
-        <div style={{ display: "flex", alignItems: "center",
-          justifyContent: "space-between", marginBottom: "2rem" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <div style={{ width: 36, height: 36, background: C.amber,
-              borderRadius: 9, display: "flex", alignItems: "center",
-              justifyContent: "center", fontSize: 18 }}>
-              🐪
-            </div>
-            <div>
-              <div style={{ fontSize: 18, fontWeight: 700 }}>CamelBox</div>
-              <div style={{ fontSize: 12, color: C.textMuted }}>Análise Financeira</div>
-            </div>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {billing && (
-              <span style={{
-                fontSize: 11, color: C.amber, padding: "3px 10px",
-                borderRadius: 20, border: `1px solid ${C.border}`,
-                background: C.amberGlow, fontWeight: 600, textTransform: "uppercase",
-              }}>
-                {billing.plan === "free"
-                  ? `Grátis · ${billing.analyses_remaining}/${billing.analyses_limit}`
-                  : billing.plan === "super"
-                  ? `Super · ${billing.analyses_remaining}/${billing.analyses_limit}`
-                  : "Master · ∞"}
-              </span>
-            )}
-            <button onClick={() => setShowPlans(true)} style={{
-              padding: "6px 14px", borderRadius: 8,
-              border: `1px solid ${C.amber}`, background: C.amberGlow,
-              color: C.amber, fontSize: 12, fontWeight: 500,
-              cursor: "pointer", fontFamily: "inherit",
-            }}>
-              Aumentar plano
-            </button>
-            <span style={{ fontSize: 13, color: C.textMuted }}>
-              {user?.name || user?.email}
-            </span>
-            <button onClick={handleLogout} style={{
-              padding: "6px 14px", borderRadius: 8,
-              border: `1px solid ${C.amber}`, background: "transparent",
-              color: C.amber, fontSize: 12, fontWeight: 500,
-              cursor: "pointer", fontFamily: "inherit",
-            }}>
-              Sair
-            </button>
-          </div>
-        </div>
-
-        <UploadCard onUploadComplete={handleUploadComplete} onShowPlans={() => setShowPlans(true)} />
-        <PlansModal
-          open={showPlans}
-          onClose={() => setShowPlans(false)}
-          onCheckout={handleCheckout}
-          currentPlan={billing?.plan}
-        />
+        <UploadCard onUploadComplete={handleUploadComplete} onShowPlans={() => onShowPlansProp?.()} />
       </div>
     );
   }
@@ -442,87 +373,31 @@ export default function DashboardPage() {
 
   return (
     <div style={{
-      minHeight: "100vh", background: C.bg, padding: "1.5rem 2rem",
+      padding: "1.5rem 2rem",
       fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif", color: C.text,
     }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center",
-        justifyContent: "space-between", marginBottom: "1.75rem",
-        flexWrap: "wrap", gap: "1rem" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ width: 36, height: 36, background: C.amber,
-            borderRadius: 9, display: "flex", alignItems: "center",
-            justifyContent: "center", fontSize: 18 }}>
-            🐪
-          </div>
-          <div>
-            <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: "-0.3px" }}>
-              CamelBox
-            </div>
-            <div style={{ fontSize: 12, color: C.textMuted }}>Análise Financeira</div>
-          </div>
-        </div>
-
-        <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-          {/* Period selector */}
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <span style={{ fontSize: 12, color: C.textMuted }}>Período:</span>
-            <PeriodPicker
-              availableMonths={availableMonths}
-              value={selectedRange ? selectedRange : (selectedMonth && selectedYear ? { month: selectedMonth, year: selectedYear } : null)}
-              onChange={(val, label) => {
-                if (val.startDate && val.endDate) {
-                  setSelectedRange(val);
-                  setSelectedMonth(null);
-                  setSelectedYear(null);
-                } else if (val.month && val.year) {
-                  setSelectedMonth(val.month);
-                  setSelectedYear(val.year);
-                  setSelectedRange(null);
-                }
-                setPeriodLabel(label || "Selecionar período");
-              }}
-            />
-          </div>
-
-          {/* User + Logout */}
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            {billing && (
-              <span style={{
-                fontSize: 11, color: C.amber, padding: "3px 10px",
-                borderRadius: 20, border: `1px solid ${C.border}`,
-                background: C.amberGlow, fontWeight: 600, textTransform: "uppercase",
-              }}>
-                {billing.plan === "free"
-                  ? `Grátis · ${billing.analyses_remaining}/${billing.analyses_limit}`
-                  : billing.plan === "super"
-                  ? `Super · ${billing.analyses_remaining}/${billing.analyses_limit}`
-                  : "Master · ∞"}
-              </span>
-            )}
-            <button onClick={() => setShowPlans(true)} style={{
-              padding: "6px 14px", borderRadius: 8,
-              border: `1px solid ${C.amber}`, background: C.amberGlow,
-              color: C.amber, fontSize: 12, fontWeight: 500,
-              cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
-            }}>
-              Aumentar plano
-            </button>
-            <span style={{ fontSize: 13, color: C.textMuted }}>
-              {user?.name || user?.email}
-            </span>
-            <button onClick={handleLogout} style={{
-              padding: "6px 14px", borderRadius: 8,
-              border: `1px solid ${C.amber}`, background: "transparent",
-              color: C.amber, fontSize: 12, fontWeight: 500,
-              cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
+      {/* Top bar: period selector */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
+        marginBottom: "1.25rem", flexWrap: "wrap", gap: "0.75rem" }}>
+        <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0, letterSpacing: "-0.3px" }}>Dashboard</h1>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 12, color: C.textMuted }}>Período:</span>
+          <PeriodPicker
+            availableMonths={availableMonths}
+            value={selectedRange ? selectedRange : (selectedMonth && selectedYear ? { month: selectedMonth, year: selectedYear } : null)}
+            onChange={(val, label) => {
+              if (val.startDate && val.endDate) {
+                setSelectedRange(val);
+                setSelectedMonth(null);
+                setSelectedYear(null);
+              } else if (val.month && val.year) {
+                setSelectedMonth(val.month);
+                setSelectedYear(val.year);
+                setSelectedRange(null);
+              }
+              setPeriodLabel(label || "Selecionar período");
             }}
-              onMouseEnter={e => { e.currentTarget.style.background = C.amberGlow; }}
-              onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
-            >
-              Sair
-            </button>
-          </div>
+          />
         </div>
       </div>
 
@@ -532,7 +407,7 @@ export default function DashboardPage() {
         compact
         onDeleteMonth={handleDeleteMonth}
         canDeleteMonth={Boolean(!selectedRange && selectedMonth && selectedYear)}
-        onShowPlans={() => setShowPlans(true)}
+        onShowPlans={() => onShowPlansProp?.()}
       />
 
       {/* Summary Cards */}
@@ -576,12 +451,6 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <PlansModal
-        open={showPlans}
-        onClose={() => setShowPlans(false)}
-        onCheckout={handleCheckout}
-        currentPlan={billing?.plan}
-      />
     </div>
   );
 }
