@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
+import useIsMobile from "../hooks/useIsMobile";
 
 const C = {
   bg: "#0F0D08",
@@ -53,8 +54,9 @@ function Field({ label, type = "text", value, onChange, placeholder, disabled })
   );
 }
 
-export default function ProfilePage() {
+export default function ProfilePage({ onLogout, onShowPlans }) {
   const { user, setUser } = useAuth();
+  const isMobile = useIsMobile();
 
   const [name, setName] = useState(user?.name || "");
   const [nameLoading, setNameLoading] = useState(false);
@@ -107,7 +109,7 @@ export default function ProfilePage() {
     : "—";
 
   return (
-    <div style={{ padding: "1.5rem 2rem", fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif", color: C.text, maxWidth: 700 }}>
+    <div style={{ padding: isMobile ? "1rem" : "1.5rem 2rem", fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif", color: C.text, maxWidth: 700 }}>
       <div style={{ marginBottom: "1.75rem" }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.4px", margin: 0 }}>Meu Perfil</h1>
         <p style={{ fontSize: 13, color: C.textMuted, marginTop: 4 }}>Gerencie suas informações pessoais</p>
@@ -116,7 +118,7 @@ export default function ProfilePage() {
       {/* Info card */}
       <Card style={{ marginBottom: "1.25rem" }}>
         <SectionTitle>Informações da Conta</SectionTitle>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem 1.5rem" }}>
+        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "0.75rem 1.5rem" }}>
           <div>
             <div style={{ fontSize: 11, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 4 }}>Email</div>
             <div style={{ fontSize: 14, color: C.text }}>{user?.email}</div>
@@ -158,6 +160,28 @@ export default function ProfilePage() {
       </Card>
 
       {/* Change password — only for email auth */}
+      {isMobile && (
+        <Card style={{ marginBottom: "1.25rem" }}>
+          <SectionTitle>Conta</SectionTitle>
+          {onShowPlans && (
+            <button onClick={onShowPlans} style={{
+              width: "100%", padding: "9px 14px", borderRadius: 9,
+              border: `1px solid ${C.amber}`, background: C.amberGlow,
+              color: C.amber, fontSize: 13, fontWeight: 500,
+              cursor: "pointer", fontFamily: "inherit", marginBottom: 8,
+            }}>Aumentar plano</button>
+          )}
+          {onLogout && (
+            <button onClick={onLogout} style={{
+              width: "100%", padding: "9px 14px", borderRadius: 9,
+              border: `1px solid ${C.border}`, background: "transparent",
+              color: C.textMuted, fontSize: 13,
+              cursor: "pointer", fontFamily: "inherit",
+            }}>Sair</button>
+          )}
+        </Card>
+      )}
+
       {user?.auth_provider === "email" && (
         <Card>
           <SectionTitle>Alterar Senha</SectionTitle>

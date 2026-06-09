@@ -1,3 +1,5 @@
+import useIsMobile from '../hooks/useIsMobile';
+
 const C = {
   bg: "#0F0D08",
   surface: "#1C1810",
@@ -9,12 +11,81 @@ const C = {
 };
 
 const NAV_ITEMS = [
-  { id: "dashboard", label: "Dashboard", icon: "📊" },
-  { id: "feedback", label: "Feedback de Gastos", icon: "💬" },
-  { id: "profile", label: "Perfil", icon: "👤" },
+  { id: "dashboard", label: "Dashboard", shortLabel: "Início", icon: "📊" },
+  { id: "feedback", label: "Feedback de Gastos", shortLabel: "Feedback", icon: "💬" },
+  { id: "profile", label: "Perfil", shortLabel: "Perfil", icon: "👤" },
 ];
 
 export default function Sidebar({ currentView, onNavigate, user, billing, onLogout, onShowPlans }) {
+  const isMobile = useIsMobile();
+
+  if (isMobile) {
+    return (
+      <>
+        {/* Top header */}
+        <div style={{
+          position: "fixed", top: 0, left: 0, right: 0, height: 50,
+          background: C.surface, borderBottom: `1px solid ${C.border}`,
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "0 1rem", zIndex: 200,
+          fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{
+              width: 28, height: 28, background: C.amber, borderRadius: 7,
+              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14,
+            }}>🐪</div>
+            <span style={{ fontSize: 14, fontWeight: 700, color: C.text, letterSpacing: "-0.3px" }}>CamelBox</span>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {billing && (
+              <span style={{
+                fontSize: 10, color: C.amber, padding: "3px 8px",
+                borderRadius: 20, border: `1px solid ${C.border}`,
+                background: C.amberGlow, fontWeight: 600, textTransform: "uppercase",
+              }}>
+                {billing.plan === "free"
+                  ? `Grátis · ${billing.analyses_remaining}/${billing.analyses_limit}`
+                  : billing.plan === "super"
+                  ? `Super · ${billing.analyses_remaining}`
+                  : "Master · ∞"}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Bottom nav */}
+        <div style={{
+          position: "fixed", bottom: 0, left: 0, right: 0, height: 64,
+          background: C.surface, borderTop: `1px solid ${C.border}`,
+          display: "flex", alignItems: "stretch", zIndex: 200,
+        }}>
+          {NAV_ITEMS.map((item) => {
+            const active = currentView === item.id;
+            return (
+              <button
+                key={item.id}
+                onClick={() => onNavigate(item.id)}
+                style={{
+                  flex: 1, display: "flex", flexDirection: "column",
+                  alignItems: "center", justifyContent: "center", gap: 3,
+                  border: "none", borderTop: active ? `2px solid ${C.amber}` : "2px solid transparent",
+                  background: active ? C.amberGlow : "transparent",
+                  color: active ? C.amber : C.textMuted,
+                  cursor: "pointer", fontFamily: "inherit",
+                }}
+              >
+                <span style={{ fontSize: 19 }}>{item.icon}</span>
+                <span style={{ fontSize: 10, fontWeight: active ? 600 : 400 }}>{item.shortLabel}</span>
+              </button>
+            );
+          })}
+        </div>
+      </>
+    );
+  }
+
+  // ── Desktop sidebar ───────────────────────────────────────────────────────
   return (
     <div style={{
       width: 220,
@@ -51,22 +122,13 @@ export default function Sidebar({ currentView, onNavigate, user, billing, onLogo
               key={item.id}
               onClick={() => onNavigate(item.id)}
               style={{
-                width: "100%",
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                padding: "9px 12px",
-                borderRadius: 9,
-                border: "none",
+                width: "100%", display: "flex", alignItems: "center", gap: 10,
+                padding: "9px 12px", borderRadius: 9, border: "none",
                 background: active ? C.amberGlow : "transparent",
                 color: active ? C.amber : C.textMuted,
-                fontSize: 13,
-                fontWeight: active ? 600 : 400,
-                cursor: "pointer",
-                fontFamily: "inherit",
-                textAlign: "left",
-                marginBottom: 2,
-                transition: "all 0.15s",
+                fontSize: 13, fontWeight: active ? 600 : 400,
+                cursor: "pointer", fontFamily: "inherit", textAlign: "left",
+                marginBottom: 2, transition: "all 0.15s",
                 borderLeft: active ? `2px solid ${C.amber}` : "2px solid transparent",
               }}
               onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "rgba(212,168,67,0.05)"; }}

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import useFeedback from "../hooks/useFeedback";
 import useDashboard from "../hooks/useDashboard";
+import useIsMobile from "../hooks/useIsMobile";
 
 const C = {
   bg: "#0F0D08",
@@ -151,6 +152,7 @@ function FeedbackResult({ feedback }) {
 }
 
 export default function FeedbackPage() {
+  const isMobile = useIsMobile();
   const { feedbacks, activeFeedback, setActiveFeedback, loading, generating, generate, loadFeedback, deleteFeedback } = useFeedback();
   const { availableMonths } = useDashboard({});
   const [selectedMonth, setSelectedMonth] = useState(null);
@@ -194,7 +196,7 @@ export default function FeedbackPage() {
   const isProcessing = activeFeedback && (activeFeedback.status === "pending" || activeFeedback.status === "processing");
 
   return (
-    <div style={{ padding: "1.5rem 2rem", fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif", color: C.text }}>
+    <div style={{ padding: isMobile ? "1rem" : "1.5rem 2rem", fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif", color: C.text }}>
       <div style={{ marginBottom: "1.75rem" }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.4px", margin: 0 }}>Feedback de Gastos</h1>
         <p style={{ fontSize: 13, color: C.textMuted, marginTop: 4 }}>
@@ -202,7 +204,7 @@ export default function FeedbackPage() {
         </p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 340px", gap: "1.25rem", alignItems: "start" }}>
+      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 340px", gap: "1.25rem", alignItems: "start" }}>
         {/* Main content */}
         <div>
           {/* Generate section */}

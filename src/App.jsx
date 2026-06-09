@@ -9,6 +9,7 @@ import FeedbackPage from './pages/FeedbackPage';
 import Sidebar from './components/Sidebar';
 import PlansModal from './components/PlansModal';
 import useBilling from './hooks/useBilling';
+import useIsMobile from './hooks/useIsMobile';
 
 const C = { bg: "#0F0D08", text: "#F5ECD7" };
 
@@ -17,13 +18,12 @@ function AppLayout() {
   const [currentView, setCurrentView] = useState('dashboard');
   const [showPlans, setShowPlans] = useState(false);
   const { billing, checkout: handleCheckout } = useBilling();
+  const isMobile = useIsMobile();
 
-  const handleLogout = () => {
-    logout();
-  };
+  const handleLogout = () => logout();
 
   const renderView = () => {
-    if (currentView === 'profile') return <ProfilePage />;
+    if (currentView === 'profile') return <ProfilePage onLogout={handleLogout} onShowPlans={() => setShowPlans(true)} />;
     if (currentView === 'feedback') return <FeedbackPage />;
     return <DashboardPage onShowPlans={() => setShowPlans(true)} />;
   };
@@ -38,7 +38,13 @@ function AppLayout() {
         onLogout={handleLogout}
         onShowPlans={() => setShowPlans(true)}
       />
-      <main style={{ flex: 1, overflowY: 'auto' }}>
+      <main style={{
+        flex: 1,
+        overflowY: 'auto',
+        paddingTop: isMobile ? 50 : 0,
+        paddingBottom: isMobile ? 64 : 0,
+        minWidth: 0,
+      }}>
         {renderView()}
       </main>
       <PlansModal

@@ -5,6 +5,7 @@ import {
 import useDashboard from "../hooks/useDashboard";
 import PeriodPicker from "../components/PeriodPicker";
 import UploadCard from "../components/UploadCard";
+import useIsMobile from "../hooks/useIsMobile";
 import api from "../services/api";
 
 // ─── Theme ──────────────────────────────────────────────────────────────────
@@ -75,7 +76,7 @@ function SummaryCard({ label, value, change, positive, icon }) {
   const up = hasChange && parseFloat(change) >= 0;
   const isGood = hasChange && (positive ? up : !up);
   return (
-    <Card style={{ flex: 1, minWidth: 200 }}>
+    <Card style={{ flex: 1, minWidth: 0 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
         <div style={{ fontSize: 12, fontWeight: 500, color: C.textMuted,
           textTransform: "uppercase", letterSpacing: "0.5px" }}>
@@ -113,7 +114,7 @@ const CustomDonutTooltip = ({ active, payload }) => {
 function DonutChart({ data }) {
   const total = data.reduce((s, d) => s + d.value, 0);
   return (
-    <Card style={{ flex: 1, minWidth: 260 }}>
+    <Card style={{ flex: 1, minWidth: 0 }}>
       <SectionTitle>Despesas por Categoria</SectionTitle>
       <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
         <ResponsiveContainer width={160} height={160}>
@@ -151,7 +152,7 @@ function DonutChart({ data }) {
 function HorizontalBarChart({ data }) {
   const max = Math.max(...data.map((d) => d.value), 1);
   return (
-    <Card style={{ flex: 1, minWidth: 240 }}>
+    <Card style={{ flex: 1, minWidth: 0 }}>
       <SectionTitle>Top Categorias de Gasto</SectionTitle>
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {data.map((d) => (
@@ -283,6 +284,7 @@ function PeriodComparison({ categories }) {
 
 // ─── Main Dashboard ──────────────────────────────────────────────────────────
 export default function DashboardPage({ onShowPlans: onShowPlansProp }) {
+  const isMobile = useIsMobile();
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [selectedYear, setSelectedYear] = useState(null);
   const [selectedRange, setSelectedRange] = useState(null); // { startDate, endDate }
@@ -355,7 +357,7 @@ export default function DashboardPage({ onShowPlans: onShowPlansProp }) {
   if (!hasData) {
     return (
       <div style={{
-        padding: "1.5rem 2rem",
+        padding: isMobile ? "1rem" : "1.5rem 2rem",
         fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif", color: C.text,
       }}>
         <UploadCard onUploadComplete={handleUploadComplete} onShowPlans={() => onShowPlansProp?.()} />
@@ -371,9 +373,11 @@ export default function DashboardPage({ onShowPlans: onShowPlansProp }) {
 
   const hBarData = [...donutData].sort((a, b) => b.value - a.value);
 
+  const p = isMobile ? "1rem" : "1.5rem 2rem";
+
   return (
     <div style={{
-      padding: "1.5rem 2rem",
+      padding: p,
       fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif", color: C.text,
     }}>
       {/* Top bar: period selector */}
@@ -411,7 +415,7 @@ export default function DashboardPage({ onShowPlans: onShowPlansProp }) {
       />
 
       {/* Summary Cards */}
-      <div style={{ display: "flex", gap: "1rem", marginBottom: "1.25rem", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: "0.75rem", marginBottom: "1.25rem", flexWrap: "wrap" }}>
         <SummaryCard
           label="Total de Receitas"
           value={summary?.total_income || 0}
@@ -442,11 +446,11 @@ export default function DashboardPage({ onShowPlans: onShowPlansProp }) {
       </div>
 
       {/* Transactions + Comparison */}
-      <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", marginBottom: "1.25rem" }}>
-        <div style={{ flex: 2, minWidth: 300 }}>
+      <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: "1rem", flexWrap: "wrap", marginBottom: "1.25rem" }}>
+        <div style={{ flex: 2, minWidth: 0 }}>
           <TransactionsTable transactions={transactions} />
         </div>
-        <div style={{ flex: 1, minWidth: 280 }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
           <PeriodComparison categories={categories} />
         </div>
       </div>
