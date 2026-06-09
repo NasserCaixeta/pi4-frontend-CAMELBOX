@@ -19,7 +19,8 @@ function deriveAvailableMonths(transactions) {
   );
 }
 
-export default function useDashboard(month, year) {
+export default function useDashboard(params) {
+  const { month, year, startDate, endDate } = params || {};
   const [summary, setSummary] = useState(null);
   const [categories, setCategories] = useState(null);
   const [transactions, setTransactions] = useState(null);
@@ -48,18 +49,26 @@ export default function useDashboard(month, year) {
       const months = deriveAvailableMonths(allTx.items);
       setAvailableMonths(months);
 
-      // If no month/year selected yet, only fetch availableMonths, skip dashboard data
-      if (!month || !year) {
+      const hasSingle = Boolean(month && year);
+      const hasRange = Boolean(startDate && endDate);
+
+      // If no selection yet, only fetch availableMonths, skip dashboard data
+      if (!hasSingle && !hasRange) {
         setLoading(false);
         return;
       }
 
       // Fetch dashboard data in parallel
-      const params = `?month=${month}&year=${year}`;
+      let qp = '';
+      if (hasSingle) {
+        qp = `?month=${month}&year=${year}`;
+      } else if (hasRange) {
+        qp = `?start_date=${startDate}&end_date=${endDate}`;
+      }
       const [summaryData, catData, txData] = await Promise.all([
-        api.get(`/dashboard/summary${params}`).catch(() => null),
-        api.get(`/dashboard/by-category${params}`).catch(() => null),
-        api.get(`/transactions${params}&limit=100`).catch(() => null),
+        api.get(`/dashboard/summary${qp}`).catch(() => null),
+        api.get(`/dashboard/by-category${qp}`).catch(() => null),
+        api.get(`/transactions${qp}&limit=100`).catch(() => null),
       ]);
 
       setSummary(summaryData);
@@ -70,7 +79,7 @@ export default function useDashboard(month, year) {
     } finally {
       setLoading(false);
     }
-  }, [month, year]);
+  }, [month, year, startDate, endDate]);
 
   useEffect(() => {
     fetchData();

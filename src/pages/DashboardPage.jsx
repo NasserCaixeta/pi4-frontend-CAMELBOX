@@ -5,6 +5,7 @@ import {
 } from "recharts";
 import { useAuth } from "../context/AuthContext";
 import useDashboard from "../hooks/useDashboard";
+import PeriodPicker from "../components/PeriodPicker";
 import UploadCard from "../components/UploadCard";
 import PlansModal from "../components/PlansModal";
 import useBilling from "../hooks/useBilling";
@@ -290,32 +291,40 @@ export default function DashboardPage() {
   const navigate = useNavigate();
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [selectedYear, setSelectedYear] = useState(null);
+  const [selectedRange, setSelectedRange] = useState(null); // { startDate, endDate }
+  const [periodLabel, setPeriodLabel] = useState("Selecionar período");
   const [showPlans, setShowPlans] = useState(false);
   const { billing, checkout: handleCheckout, refresh: refreshBilling } = useBilling();
 
   const {
     summary, categories, transactions, statements,
     availableMonths, loading, error, refresh,
-  } = useDashboard(selectedMonth, selectedYear);
+  } = useDashboard(
+    selectedRange
+      ? { startDate: selectedRange.startDate, endDate: selectedRange.endDate }
+      : { month: selectedMonth, year: selectedYear }
+  );
 
-  // Auto-select most recent month when availableMonths loads
+  // Auto-select most recent month when availableMonths loads and there is no range selected
   useEffect(() => {
     if (availableMonths.length === 0) {
       setSelectedMonth(null);
       setSelectedYear(null);
+      setSelectedRange(null);
       return;
     }
 
-    const selectedExists = availableMonths.some(
-      (p) => p.month === selectedMonth && p.year === selectedYear
-    );
+    const selectedExists = selectedRange
+      ? true
+      : availableMonths.some((p) => p.month === selectedMonth && p.year === selectedYear);
 
-    if (selectedMonth === null || !selectedExists) {
+    if (!selectedRange && (selectedMonth === null || !selectedExists)) {
       const latest = availableMonths[availableMonths.length - 1];
       setSelectedMonth(latest.month);
       setSelectedYear(latest.year);
+      setPeriodLabel(formatPeriod(latest.month, latest.year));
     }
-  }, [availableMonths, selectedMonth, selectedYear]);
+  }, [availableMonths, selectedMonth, selectedYear, selectedRange]);
 
   const handleLogout = () => {
     logout();
@@ -327,6 +336,7 @@ export default function DashboardPage() {
   };
 
   const handleDeleteMonth = async () => {
+    if (selectedRange) return; // disabled in UI as well
     if (!selectedMonth || !selectedYear) return;
 
     const label = formatPeriod(selectedMonth, selectedYear);
@@ -457,22 +467,22 @@ export default function DashboardPage() {
           {/* Period selector */}
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ fontSize: 12, color: C.textMuted }}>Período:</span>
-            <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-              {availableMonths.map((p) => (
-                <button key={p.label}
-                  onClick={() => { setSelectedMonth(p.month); setSelectedYear(p.year); }}
-                  style={{
-                    padding: "5px 12px", borderRadius: 8, border: "1px solid",
-                    borderColor: selectedMonth === p.month && selectedYear === p.year ? C.amber : C.border,
-                    background: selectedMonth === p.month && selectedYear === p.year ? C.amberGlow : "transparent",
-                    color: selectedMonth === p.month && selectedYear === p.year ? C.amber : C.textMuted,
-                    fontSize: 12, fontWeight: 500, cursor: "pointer",
-                    fontFamily: "inherit", transition: "all 0.15s",
-                  }}>
-                  {p.label}
-                </button>
-              ))}
-            </div>
+            <PeriodPicker
+              availableMonths={availableMonths}
+              value={selectedRange ? selectedRange : (selectedMonth && selectedYear ? { month: selectedMonth, year: selectedYear } : null)}
+              onChange={(val, label) => {
+                if (val.startDate && val.endDate) {
+                  setSelectedRange(val);
+                  setSelectedMonth(null);
+                  setSelectedYear(null);
+                } else if (val.month && val.year) {
+                  setSelectedMonth(val.month);
+                  setSelectedYear(val.year);
+                  setSelectedRange(null);
+                }
+                setPeriodLabel(label || "Selecionar período");
+              }}
+            />
           </div>
 
           {/* User + Logout */}
@@ -521,7 +531,7 @@ export default function DashboardPage() {
         onUploadComplete={handleUploadComplete}
         compact
         onDeleteMonth={handleDeleteMonth}
-        canDeleteMonth={Boolean(selectedMonth && selectedYear)}
+        canDeleteMonth={Boolean(!selectedRange && selectedMonth && selectedYear)}
         onShowPlans={() => setShowPlans(true)}
       />
 
@@ -542,7 +552,7 @@ export default function DashboardPage() {
           icon="💸"
         />
         <SummaryCard
-          label="Saldo"
+          label="Saldo (Aparece se for extrato)"
           value={summary?.balance || 0}
           change={null}
           positive={true}
