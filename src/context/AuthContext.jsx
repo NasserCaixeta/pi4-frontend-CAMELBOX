@@ -8,6 +8,10 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    if (!sessionStorage.getItem('token')) {
+      setLoading(false);
+      return;
+    }
     api.get('/auth/me')
       .then((data) => setUser(data))
       .catch(() => setUser(null))
@@ -16,21 +20,24 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     const data = await api.post('/auth/login', { email, password });
+    sessionStorage.setItem('token', data.access_token);
     setUser(data.user);
     return data;
   };
 
   const register = async (name, email, password) => {
     const data = await api.post('/auth/register', { email, password, name });
+    sessionStorage.setItem('token', data.access_token);
     setUser(data.user);
     return data;
   };
 
   const logout = async () => {
+    sessionStorage.removeItem('token');
     try {
       await api.post('/auth/logout');
     } catch {
-      // ignore — cookie will expire naturally
+      // ignore
     } finally {
       setUser(null);
     }
