@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import {
-  PieChart, Pie, Cell, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell, Tooltip,
 } from "recharts";
 import useDashboard from "../hooks/useDashboard";
 import PeriodPicker from "../components/PeriodPicker";
@@ -107,37 +107,57 @@ const CustomDonutTooltip = ({ active, payload }) => {
 };
 
 function DonutChart({ data }) {
+  const isMobile = useIsMobile();
   const total = data.reduce((s, d) => s + d.value, 0);
+
+  const legend = (
+    <div style={{
+      display: "grid",
+      gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr",
+      gap: isMobile ? "6px 20px" : 8,
+      width: "100%",
+    }}>
+      {data.map((d) => (
+        <div key={d.name} style={{ display: "flex", alignItems: "center",
+          justifyContent: "space-between", gap: 6 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+            <div style={{ width: 8, height: 8, borderRadius: "50%",
+              background: getCatColor(d.name), flexShrink: 0 }} />
+            <span style={{ fontSize: 12, color: C.textMuted,
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {d.name}
+            </span>
+          </div>
+          <span style={{ fontSize: 12, color: C.text, fontWeight: 500, flexShrink: 0 }}>
+            {total > 0 ? ((d.value / total) * 100).toFixed(0) : 0}%
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+
+  const size = 200;
+  const pie = (
+    <div style={{ width: size, height: size, flexShrink: 0 }}>
+      <PieChart width={size} height={size}>
+        <Pie data={data} cx="50%" cy="50%"
+          innerRadius={60} outerRadius={90}
+          dataKey="value" strokeWidth={0}>
+          {data.map((entry) => (
+            <Cell key={entry.name} fill={getCatColor(entry.name)} />
+          ))}
+        </Pie>
+        <Tooltip content={<CustomDonutTooltip />} />
+      </PieChart>
+    </div>
+  );
+
   return (
     <Card style={{ flex: 1, minWidth: 0 }}>
       <SectionTitle>Despesas por Categoria</SectionTitle>
-      <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
-        <ResponsiveContainer width={160} height={160}>
-          <PieChart>
-            <Pie data={data} cx="50%" cy="50%" innerRadius={48} outerRadius={72}
-              dataKey="value" strokeWidth={0}>
-              {data.map((entry) => (
-                <Cell key={entry.name} fill={getCatColor(entry.name)} />
-              ))}
-            </Pie>
-            <Tooltip content={<CustomDonutTooltip />} />
-          </PieChart>
-        </ResponsiveContainer>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
-          {data.map((d) => (
-            <div key={d.name} style={{ display: "flex", alignItems: "center",
-              justifyContent: "space-between", gap: 8 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <div style={{ width: 8, height: 8, borderRadius: "50%",
-                  background: getCatColor(d.name), flexShrink: 0 }} />
-                <span style={{ fontSize: 12, color: C.textMuted }}>{d.name}</span>
-              </div>
-              <span style={{ fontSize: 12, color: C.text, fontWeight: 500 }}>
-                {total > 0 ? ((d.value / total) * 100).toFixed(0) : 0}%
-              </span>
-            </div>
-          ))}
-        </div>
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1.25rem" }}>
+        {pie}
+        {legend}
       </div>
     </Card>
   );
@@ -435,7 +455,7 @@ export default function DashboardPage({ onShowPlans: onShowPlansProp }) {
       </div>
 
       {/* Charts row */}
-      <div style={{ display: "flex", gap: "1rem", marginBottom: "1.25rem", flexWrap: "wrap" }}>
+      <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: "1rem", marginBottom: "1.25rem" }}>
         <DonutChart data={donutData} />
         <HorizontalBarChart data={hBarData} />
       </div>
