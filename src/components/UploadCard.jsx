@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import api from '../services/api';
+import ProgressBar from './ProgressBar';
 
 const C = {
   bg: "#0F0D08",
@@ -157,11 +158,15 @@ export default function UploadCard({ onUploadComplete, compact = false, onDelete
         )}
 
         {status === 'uploading' && (
-          <span style={{ fontSize: 13, color: C.amber }}>Enviando...</span>
+          <div style={{ flex: 1, padding: '0 0.5rem' }}>
+            <ProgressBar label="Enviando arquivo..." />
+          </div>
         )}
 
         {status === 'processing' && (
-          <span style={{ fontSize: 13, color: C.amber }}>Analisando extrato...</span>
+          <div style={{ flex: 1, padding: '0 0.5rem' }}>
+            <ProgressBar label="Analisando extrato com IA..." />
+          </div>
         )}
 
         {status === 'completed' && (
@@ -242,18 +247,18 @@ export default function UploadCard({ onUploadComplete, compact = false, onDelete
         )}
 
         {status === 'uploading' && (
-          <>
-            <div style={{ fontSize: 32 }}>⏳</div>
-            <div style={{ fontSize: 15, color: C.amber }}>Enviando arquivo...</div>
-          </>
+          <div style={{ width: '100%', padding: '0.5rem 0' }}>
+            <ProgressBar label="Enviando arquivo..." />
+          </div>
         )}
 
         {status === 'processing' && (
-          <>
-            <div style={{ fontSize: 32 }}>🔍</div>
-            <div style={{ fontSize: 15, color: C.amber }}>Analisando extrato...</div>
-            <div style={{ fontSize: 12, color: C.textMuted }}>Isso pode levar alguns segundos</div>
-          </>
+          <div style={{ width: '100%', padding: '0.5rem 0' }}>
+            <ProgressBar
+              label="Analisando extrato com IA..."
+              sublabel="Isso pode levar alguns segundos"
+            />
+          </div>
         )}
 
         {status === 'completed' && (

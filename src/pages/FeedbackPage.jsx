@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import useFeedback from "../hooks/useFeedback";
 import useDashboard from "../hooks/useDashboard";
 import useIsMobile from "../hooks/useIsMobile";
+import ProgressBar from "../components/ProgressBar";
 
 const C = {
   bg: "#0F0D08",
@@ -270,10 +271,11 @@ export default function FeedbackPage() {
               </div>
               {isProcessing ? (
                 <Card>
-                  <div style={{ textAlign: "center", padding: "2rem 0" }}>
-                    <div style={{ fontSize: 32, marginBottom: 12 }}>🔍</div>
-                    <div style={{ fontSize: 15, color: C.amber, marginBottom: 6 }}>Analisando suas transações...</div>
-                    <div style={{ fontSize: 12, color: C.textMuted }}>A IA está identificando padrões e gerando insights. Isso pode levar alguns segundos.</div>
+                  <div style={{ padding: "1.5rem 0.5rem" }}>
+                    <ProgressBar
+                      label="Analisando suas transações..."
+                      sublabel="A IA está identificando padrões e gerando insights. Isso pode levar alguns segundos."
+                    />
                   </div>
                 </Card>
               ) : activeFeedback.status === "error" ? (
