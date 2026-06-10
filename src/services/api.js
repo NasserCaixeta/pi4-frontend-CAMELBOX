@@ -2,9 +2,6 @@ const BASE_URL = import.meta.env.VITE_API_URL || 'https://pi4-backend-pfok.onren
 
 async function handleResponse(res) {
   if (!res.ok) {
-    if (res.status === 401) {
-      localStorage.removeItem('token');
-    }
     const data = await res.json().catch(() => ({}));
     const error = new Error(data.detail || 'Erro de rede');
     error.status = res.status;
@@ -14,18 +11,12 @@ async function handleResponse(res) {
   return res.json();
 }
 
-function getAuthHeaders() {
-  const headers = {};
-  const token = localStorage.getItem('token');
-  if (token) headers['Authorization'] = `Bearer ${token}`;
-  return headers;
-}
-
 async function request(method, path, body) {
-  const headers = { 'Content-Type': 'application/json', ...getAuthHeaders() };
+  const headers = { 'Content-Type': 'application/json' };
   const res = await fetch(`${BASE_URL}${path}`, {
     method,
     headers,
+    credentials: 'include',
     body: body ? JSON.stringify(body) : undefined,
   });
   return handleResponse(res);
@@ -41,7 +32,7 @@ const api = {
     formData.append('file', file);
     const res = await fetch(`${BASE_URL}${path}`, {
       method: 'POST',
-      headers: getAuthHeaders(),
+      credentials: 'include',
       body: formData,
     });
     return handleResponse(res);

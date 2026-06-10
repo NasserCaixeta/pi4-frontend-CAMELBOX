@@ -5,47 +5,39 @@ const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(() => localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!token) {
-      setLoading(false);
-      return;
-    }
     api.get('/auth/me')
       .then((data) => setUser(data))
-      .catch(() => {
-        localStorage.removeItem('token');
-        setToken(null);
-      })
+      .catch(() => setUser(null))
       .finally(() => setLoading(false));
-  }, [token]);
+  }, []);
 
   const login = async (email, password) => {
     const data = await api.post('/auth/login', { email, password });
-    localStorage.setItem('token', data.access_token);
-    setToken(data.access_token);
     setUser(data.user);
     return data;
   };
 
   const register = async (name, email, password) => {
     const data = await api.post('/auth/register', { email, password, name });
-    localStorage.setItem('token', data.access_token);
-    setToken(data.access_token);
     setUser(data.user);
     return data;
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    setToken(null);
-    setUser(null);
+  const logout = async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch {
+      // ignore — cookie will expire naturally
+    } finally {
+      setUser(null);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, setUser, token, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, setUser, loading, login, register, logout }}>
       {children}
     </AuthContext.Provider>
   );
