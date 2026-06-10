@@ -57,42 +57,37 @@ const formatPeriod = (month, year) => {
 const Card = ({ children, style }) => (
   <div style={{
     background: C.card, border: `1px solid ${C.border}`,
-    borderRadius: 16, padding: "1.25rem", ...style,
+    borderRadius: 10, padding: "1.25rem", ...style,
   }}>
     {children}
   </div>
 );
 
 const SectionTitle = ({ children }) => (
-  <div style={{ fontSize: 13, fontWeight: 600, color: C.textMuted,
-    letterSpacing: "0.6px", textTransform: "uppercase", marginBottom: "1rem" }}>
+  <div style={{ fontSize: 14, fontWeight: 600, color: C.text, marginBottom: "0.875rem" }}>
     {children}
   </div>
 );
 
 // ─── Summary Card ────────────────────────────────────────────────────────────
-function SummaryCard({ label, value, change, positive, icon }) {
+function SummaryCard({ label, value, change, positive }) {
   const hasChange = change !== null && change !== undefined;
   const up = hasChange && parseFloat(change) >= 0;
   const isGood = hasChange && (positive ? up : !up);
   return (
     <Card style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-        <div style={{ fontSize: 12, fontWeight: 500, color: C.textMuted,
-          textTransform: "uppercase", letterSpacing: "0.5px" }}>
-          {label}
-        </div>
-        <div style={{ fontSize: 20 }}>{icon}</div>
+      <div style={{ fontSize: 11, fontWeight: 500, color: C.textMuted, marginBottom: "0.5rem" }}>
+        {label}
       </div>
       <div style={{ fontSize: 26, fontWeight: 700, color: C.text,
-        letterSpacing: "-0.5px", margin: "0.5rem 0 0.4rem" }}>
+        letterSpacing: "-0.5px", marginBottom: "0.4rem" }}>
         {fmt(value)}
       </div>
       {hasChange && (
         <div style={{ display: "flex", alignItems: "center", gap: 4,
           fontSize: 12, color: isGood ? C.success : C.danger }}>
-          <span>{up ? "▲" : "▼"}</span>
-          <span>{Math.abs(change)}% vs mês anterior</span>
+          <span>{up ? "+" : "−"}{Math.abs(change)}%</span>
+          <span style={{ color: C.textMuted }}>vs mês anterior</span>
         </div>
       )}
     </Card>
@@ -191,53 +186,56 @@ function TransactionsTable({ transactions }) {
   return (
     <Card>
       <SectionTitle>Transações Recentes</SectionTitle>
-      <div style={{ overflowX: "auto" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
-          <thead>
-            <tr style={{ borderBottom: `1px solid ${C.border}` }}>
-              {["Descrição", "Categoria", "Data", "Valor"].map((h) => (
-                <th key={h} style={{ textAlign: "left", padding: "0 8px 10px",
-                  color: C.textMuted, fontWeight: 500, fontSize: 11,
-                  letterSpacing: "0.4px", textTransform: "uppercase", whiteSpace: "nowrap" }}>
-                  {h}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {transactions.items.map((t) => {
-              const catName = t.category?.name || "Sem categoria";
-              const formattedDate = new Date(t.date + 'T00:00:00').toLocaleDateString('pt-BR');
-              return (
-                <tr key={t.id} style={{ borderBottom: `1px solid ${C.border}` }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = C.surface}
-                  onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
-                  <td style={{ padding: "10px 8px", color: C.text, fontWeight: 500 }}>
-                    {t.description || "—"}
-                  </td>
-                  <td style={{ padding: "10px 8px" }}>
-                    <span style={{
-                      display: "inline-flex", alignItems: "center", gap: 5,
-                      fontSize: 11, fontWeight: 500, padding: "3px 8px", borderRadius: 20,
-                      background: `${getCatColor(catName)}20`, color: getCatColor(catName),
-                    }}>
-                      {catName}
-                    </span>
-                  </td>
-                  <td style={{ padding: "10px 8px", color: C.textMuted, whiteSpace: "nowrap" }}>
-                    {formattedDate}
-                  </td>
-                  <td style={{ padding: "10px 8px", fontWeight: 600,
-                    color: t.type === "credit" ? C.success : C.danger,
-                    textAlign: "right", whiteSpace: "nowrap" }}>
-                    {t.type === "credit" ? "+" : "-"}{fmt(t.amount)}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
+      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, tableLayout: "fixed" }}>
+        <colgroup>
+          <col />
+          <col style={{ width: 92 }} />
+          <col style={{ width: 72 }} />
+          <col style={{ width: 82 }} />
+        </colgroup>
+        <thead>
+          <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+            <th style={{ textAlign: "left", padding: "0 8px 10px", color: C.textMuted, fontWeight: 500, fontSize: 11 }}>Descrição</th>
+            <th style={{ textAlign: "left", padding: "0 8px 10px", color: C.textMuted, fontWeight: 500, fontSize: 11 }}>Categoria</th>
+            <th style={{ textAlign: "left", padding: "0 8px 10px", color: C.textMuted, fontWeight: 500, fontSize: 11 }}>Data</th>
+            <th style={{ textAlign: "right", padding: "0 8px 10px", color: C.textMuted, fontWeight: 500, fontSize: 11 }}>Valor</th>
+          </tr>
+        </thead>
+        <tbody>
+          {transactions.items.map((t) => {
+            const catName = t.category?.name || "Sem categoria";
+            const formattedDate = new Date(t.date + 'T00:00:00').toLocaleDateString('pt-BR');
+            return (
+              <tr key={t.id} style={{ borderBottom: `1px solid ${C.border}` }}
+                onMouseEnter={(e) => e.currentTarget.style.background = C.surface}
+                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
+                <td style={{ padding: "10px 8px", color: C.text, fontWeight: 500,
+                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {t.description || "—"}
+                </td>
+                <td style={{ padding: "10px 8px", overflow: "hidden" }}>
+                  <span style={{
+                    display: "inline-flex", alignItems: "center", gap: 5,
+                    fontSize: 11, fontWeight: 500, padding: "3px 8px", borderRadius: 20,
+                    background: `${getCatColor(catName)}20`, color: getCatColor(catName),
+                    overflow: "hidden", maxWidth: "100%",
+                  }}>
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{catName}</span>
+                  </span>
+                </td>
+                <td style={{ padding: "10px 8px", color: C.textMuted, whiteSpace: "nowrap" }}>
+                  {formattedDate}
+                </td>
+                <td style={{ padding: "10px 8px", fontWeight: 600,
+                  color: t.type === "credit" ? C.success : C.danger,
+                  textAlign: "right", whiteSpace: "nowrap" }}>
+                  {t.type === "credit" ? "+" : "-"}{fmt(t.amount)}
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </Card>
   );
 }
@@ -271,7 +269,7 @@ function PeriodComparison({ categories }) {
               {hasChange && (
                 <div style={{ fontSize: 11, marginTop: 2,
                   color: isGood ? C.success : C.danger }}>
-                  {change > 0 ? "▲" : "▼"} {Math.abs(change)}%
+                  {change > 0 ? "+" : "−"}{Math.abs(change)}%
                 </div>
               )}
             </div>
@@ -421,21 +419,18 @@ export default function DashboardPage({ onShowPlans: onShowPlansProp }) {
           value={summary?.total_income || 0}
           change={summary?.comparison?.income_change_percent ?? null}
           positive={true}
-          icon="💰"
         />
         <SummaryCard
           label="Total de Despesas"
           value={summary?.total_expenses || 0}
           change={summary?.comparison?.expenses_change_percent ?? null}
           positive={false}
-          icon="💸"
         />
         <SummaryCard
-          label="Saldo (Aparece se for extrato)"
+          label="Saldo"
           value={summary?.balance || 0}
           change={null}
           positive={true}
-          icon="📊"
         />
       </div>
 

@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import useIsMobile from "../hooks/useIsMobile";
 
 const C = {
   bg: "#0F0D08",
@@ -32,6 +33,7 @@ function buildLabelFromRange(s, e) {
 }
 
 export default function PeriodPicker({ availableMonths, value, onChange }) {
+  const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
   const [start, setStart] = useState(null);
   const [end, setEnd] = useState(null);
@@ -105,71 +107,91 @@ export default function PeriodPicker({ availableMonths, value, onChange }) {
     return afterA && beforeB;
   }
 
+  const btnStyle = {
+    padding: "6px 10px", borderRadius: 7, border: `1px solid ${C.border}`,
+    background: "transparent", color: C.text, fontSize: 12,
+    cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
+  };
+
+  const panelStyle = isMobile
+    ? { position: "fixed", left: "1rem", right: "1rem", top: "50%", transform: "translateY(-50%)" }
+    : { position: "absolute", right: 0, top: "calc(100% + 8px)", minWidth: 520 };
+
   return (
     <div style={{ position: "relative" }}>
-      <button onClick={() => setOpen(o=>!o)}
-        style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${C.amber}`, background: C.amberGlow, color: C.amber, fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>
-        {currentLabel} ▼
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{ padding: "6px 12px", borderRadius: 7, border: `1px solid ${C.border}`, background: "transparent", color: C.text, fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}
+      >
+        {currentLabel} ›
       </button>
 
       {open && (
-        <div style={{ position: "absolute", right: 0, marginTop: 8, zIndex: 50,
-          background: C.surface, border: `1px solid ${C.border}`, borderRadius: 12, padding: 12, color: C.text, minWidth: 520 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "200px 1fr", gap: 12 }}>
-            <div>
-              <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 8 }}>Atalhos</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                <button onClick={shortcutCurrentMonth} style={{ padding: "6px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: "transparent", color: C.text, fontSize: 12, cursor: "pointer" }}>Mês atual</button>
-                {sorted.length >= 3 && (
-                  <button onClick={() => shortcutLastN(3)} style={{ padding: "6px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: "transparent", color: C.text, fontSize: 12, cursor: "pointer" }}>Últimos 3 meses</button>
-                )}
-                {sorted.length >= 6 && (
-                  <button onClick={() => shortcutLastN(6)} style={{ padding: "6px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: "transparent", color: C.text, fontSize: 12, cursor: "pointer" }}>Últimos 6 meses</button>
-                )}
-                <button onClick={shortcutThisYear} style={{ padding: "6px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: "transparent", color: C.text, fontSize: 12, cursor: "pointer" }}>Este ano</button>
+        <>
+          <div
+            onClick={() => setOpen(false)}
+            style={{ position: "fixed", inset: 0, background: isMobile ? "rgba(0,0,0,0.5)" : "transparent", zIndex: 49 }}
+          />
+          <div style={{ ...panelStyle, zIndex: 50, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 14, color: C.text }}>
+            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "180px 1fr", gap: 14 }}>
+              {/* Shortcuts */}
+              <div>
+                <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 8 }}>Atalhos</div>
+                <div style={{ display: "flex", flexDirection: isMobile ? "row" : "column", flexWrap: "wrap", gap: 6 }}>
+                  <button onClick={shortcutCurrentMonth} style={btnStyle}>Mês atual</button>
+                  {sorted.length >= 3 && (
+                    <button onClick={() => shortcutLastN(3)} style={btnStyle}>Últ. 3 meses</button>
+                  )}
+                  {sorted.length >= 6 && (
+                    <button onClick={() => shortcutLastN(6)} style={btnStyle}>Últ. 6 meses</button>
+                  )}
+                  <button onClick={shortcutThisYear} style={btnStyle}>Este ano</button>
+                </div>
               </div>
-            </div>
 
-            <div>
-              <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 8 }}>Personalizado</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {years.map((y) => (
-                  <div key={y}>
-                    <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 6 }}>{y}</div>
-                    <div style={{ display: "grid", gridTemplateColumns: "repeat(6, minmax(0, 1fr))", gap: 6 }}>
-                      {Array.from({ length: 12 }).map((_, i) => {
-                        const m = i + 1;
-                        const enabled = monthsSet.has(keyFor(y, m));
-                        const isStart = start && start.year === y && start.month === m;
-                        const isEnd = end && end.year === y && end.month === m;
-                        const inPreview = start && (isStart || isInPreview(y, m));
-                        return (
-                          <button key={m} disabled={!enabled}
-                            onClick={() => enabled && handlePickMonth(y, m)}
-                            style={{
-                              padding: "6px 8px",
-                              borderRadius: 8,
-                              border: `1px solid ${isStart || isEnd ? C.amber : C.border}`,
-                              background: isStart || isEnd ? C.amberGlow : inPreview ? `${C.amberGlow}` : "transparent",
-                              color: enabled ? (isStart || isEnd ? C.amber : C.text) : C.textMuted,
-                              cursor: enabled ? "pointer" : "not-allowed",
-                              fontSize: 12,
-                            }}
-                          >{monthLabel(m, y, "short").split(" ")[0]}</button>
-                        );
-                      })}
+              {/* Month grid */}
+              <div>
+                <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 8 }}>Personalizado</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {years.map((y) => (
+                    <div key={y}>
+                      <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 6 }}>{y}</div>
+                      <div style={{ display: "grid", gridTemplateColumns: `repeat(${isMobile ? 4 : 6}, minmax(0, 1fr))`, gap: 5 }}>
+                        {Array.from({ length: 12 }).map((_, i) => {
+                          const m = i + 1;
+                          const enabled = monthsSet.has(keyFor(y, m));
+                          const isStart = start && start.year === y && start.month === m;
+                          const isEnd = end && end.year === y && end.month === m;
+                          const inPreview = start && (isStart || isInPreview(y, m));
+                          return (
+                            <button key={m} disabled={!enabled}
+                              onClick={() => enabled && handlePickMonth(y, m)}
+                              style={{
+                                padding: "5px 4px", borderRadius: 6, fontFamily: "inherit",
+                                border: `1px solid ${isStart || isEnd ? C.amber : C.border}`,
+                                background: isStart || isEnd ? C.amberGlow : inPreview ? C.amberGlow : "transparent",
+                                color: enabled ? (isStart || isEnd ? C.amber : C.text) : C.textMuted,
+                                cursor: enabled ? "pointer" : "not-allowed",
+                                fontSize: 11,
+                              }}
+                            >{monthLabel(m, y, "short").split(" ")[0]}</button>
+                          );
+                        })}
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 10, gap: 8 }}>
-                <button onClick={() => setOpen(false)} style={{ padding: "6px 10px", borderRadius: 8, border: `1px solid ${C.border}`, background: "transparent", color: C.textMuted, fontSize: 12, cursor: "pointer" }}>Cancelar</button>
-                <button onClick={() => applyRange(start, end)} disabled={!start}
-                  style={{ padding: "6px 12px", borderRadius: 8, border: `1px solid ${C.amber}`, background: C.amberGlow, color: C.amber, fontWeight: 600, fontSize: 12, cursor: start ? "pointer" : "not-allowed" }}>Aplicar</button>
+                  ))}
+                </div>
+                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12, gap: 8 }}>
+                  <button onClick={() => setOpen(false)} style={{ ...btnStyle, color: C.textMuted }}>Cancelar</button>
+                  <button onClick={() => applyRange(start, end)} disabled={!start}
+                    style={{ ...btnStyle, border: `1px solid ${C.amber}`, color: C.amber, fontWeight: 600, opacity: start ? 1 : 0.5 }}>
+                    Aplicar
+                  </button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   );

@@ -42,7 +42,7 @@ function AppLayout() {
         flex: 1,
         overflowY: 'auto',
         paddingTop: isMobile ? 50 : 0,
-        paddingBottom: isMobile ? 64 : 0,
+        paddingBottom: isMobile ? 74 : 0,
         minWidth: 0,
       }}>
         {renderView()}

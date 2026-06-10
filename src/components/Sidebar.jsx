@@ -10,10 +10,31 @@ const C = {
   textMuted: "#8A7A5A",
 };
 
+const NavIcons = {
+  dashboard: (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+      <rect x="1" y="7" width="3" height="7" rx="1" fill="currentColor"/>
+      <rect x="6" y="4" width="3" height="10" rx="1" fill="currentColor"/>
+      <rect x="11" y="1" width="3" height="13" rx="1" fill="currentColor"/>
+    </svg>
+  ),
+  feedback: (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+      <path d="M1.5 2.5h12a1 1 0 0 1 1 1v7a1 1 0 0 1-1 1H5l-3.5 2.5V3.5a1 1 0 0 1 1-1z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
+    </svg>
+  ),
+  profile: (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+      <circle cx="7.5" cy="4.5" r="2.5" stroke="currentColor" strokeWidth="1.3"/>
+      <path d="M1.5 13c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
+    </svg>
+  ),
+};
+
 const NAV_ITEMS = [
-  { id: "dashboard", label: "Dashboard", shortLabel: "Início", icon: "📊" },
-  { id: "feedback", label: "Feedback de Gastos", shortLabel: "Feedback", icon: "💬" },
-  { id: "profile", label: "Perfil", shortLabel: "Perfil", icon: "👤" },
+  { id: "dashboard", label: "Dashboard", shortLabel: "Início" },
+  { id: "feedback", label: "Análise de Gastos", shortLabel: "Análise" },
+  { id: "profile", label: "Perfil", shortLabel: "Perfil" },
 ];
 
 export default function Sidebar({ currentView, onNavigate, user, billing, onLogout, onShowPlans }) {
@@ -33,22 +54,21 @@ export default function Sidebar({ currentView, onNavigate, user, billing, onLogo
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <div style={{
               width: 28, height: 28, background: C.amber, borderRadius: 7,
-              display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14,
-            }}>🐪</div>
+              display: "flex", alignItems: "center", justifyContent: "center",
+              fontFamily: "Georgia, serif", fontSize: 16, fontWeight: 700, color: C.bg, lineHeight: 1,
+            }}>C</div>
             <span style={{ fontSize: 14, fontWeight: 700, color: C.text, letterSpacing: "-0.3px" }}>CamelBox</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             {billing && (
               <span style={{
-                fontSize: 10, color: C.amber, padding: "3px 8px",
-                borderRadius: 20, border: `1px solid ${C.border}`,
-                background: C.amberGlow, fontWeight: 600, textTransform: "uppercase",
+                fontSize: 10, color: C.textMuted, fontWeight: 500,
               }}>
                 {billing.plan === "free"
                   ? `Grátis · ${billing.analyses_remaining}/${billing.analyses_limit}`
                   : billing.plan === "super"
-                  ? `Super · ${billing.analyses_remaining}`
-                  : "Master · ∞"}
+                  ? `Super · ${billing.analyses_remaining} restantes`
+                  : "Master"}
               </span>
             )}
           </div>
@@ -56,7 +76,7 @@ export default function Sidebar({ currentView, onNavigate, user, billing, onLogo
 
         {/* Bottom nav */}
         <div style={{
-          position: "fixed", bottom: 0, left: 0, right: 0, height: 64,
+          position: "fixed", bottom: 0, left: 0, right: 0, height: 74,
           background: C.surface, borderTop: `1px solid ${C.border}`,
           display: "flex", alignItems: "stretch", zIndex: 200,
         }}>
@@ -68,15 +88,15 @@ export default function Sidebar({ currentView, onNavigate, user, billing, onLogo
                 onClick={() => onNavigate(item.id)}
                 style={{
                   flex: 1, display: "flex", flexDirection: "column",
-                  alignItems: "center", justifyContent: "center", gap: 3,
+                  alignItems: "center", justifyContent: "center", gap: 4,
                   border: "none", borderTop: active ? `2px solid ${C.amber}` : "2px solid transparent",
                   background: active ? C.amberGlow : "transparent",
                   color: active ? C.amber : C.textMuted,
                   cursor: "pointer", fontFamily: "inherit",
                 }}
               >
-                <span style={{ fontSize: 19 }}>{item.icon}</span>
-                <span style={{ fontSize: 10, fontWeight: active ? 600 : 400 }}>{item.shortLabel}</span>
+                <span style={{ display: "flex", transform: "scale(1.33)", transformOrigin: "center" }}>{NavIcons[item.id]}</span>
+                <span style={{ fontSize: 11, fontWeight: active ? 600 : 400 }}>{item.shortLabel}</span>
               </button>
             );
           })}
@@ -104,8 +124,9 @@ export default function Sidebar({ currentView, onNavigate, user, billing, onLogo
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
           <div style={{
             width: 34, height: 34, background: C.amber, borderRadius: 8,
-            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16,
-          }}>🐪</div>
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontFamily: "Georgia, serif", fontSize: 20, fontWeight: 700, color: C.bg, lineHeight: 1,
+          }}>C</div>
           <div>
             <div style={{ fontSize: 15, fontWeight: 700, color: C.text, letterSpacing: "-0.3px" }}>CamelBox</div>
             <div style={{ fontSize: 11, color: C.textMuted }}>Análise Financeira</div>
@@ -134,7 +155,7 @@ export default function Sidebar({ currentView, onNavigate, user, billing, onLogo
               onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "rgba(212,168,67,0.05)"; }}
               onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
             >
-              <span style={{ fontSize: 15 }}>{item.icon}</span>
+              <span style={{ display: "flex", color: active ? C.amber : C.textMuted }}>{NavIcons[item.id]}</span>
               <span>{item.label}</span>
             </button>
           );
@@ -145,16 +166,14 @@ export default function Sidebar({ currentView, onNavigate, user, billing, onLogo
       <div style={{ padding: "0.75rem 1rem", borderTop: `1px solid ${C.border}` }}>
         {billing && (
           <div style={{
-            fontSize: 11, color: C.amber, padding: "4px 10px",
-            borderRadius: 20, border: `1px solid ${C.border}`,
-            background: C.amberGlow, fontWeight: 600, textTransform: "uppercase",
-            textAlign: "center", marginBottom: 8,
+            fontSize: 11, color: C.textMuted,
+            marginBottom: 8,
           }}>
             {billing.plan === "free"
-              ? `Grátis · ${billing.analyses_remaining}/${billing.analyses_limit}`
+              ? `Plano Grátis · ${billing.analyses_remaining} análises restantes`
               : billing.plan === "super"
-              ? `Super · ${billing.analyses_remaining}/${billing.analyses_limit}`
-              : "Master · ∞"}
+              ? `Plano Super · ${billing.analyses_remaining} restantes`
+              : "Plano Master"}
           </div>
         )}
         {onShowPlans && (

@@ -22,13 +22,13 @@ const fmt = (v) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
 const Card = ({ children, style }) => (
-  <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: "1.25rem", ...style }}>
+  <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: "1.25rem", ...style }}>
     {children}
   </div>
 );
 
 const SectionTitle = ({ children }) => (
-  <div style={{ fontSize: 13, fontWeight: 600, color: C.textMuted, letterSpacing: "0.6px", textTransform: "uppercase", marginBottom: "1rem" }}>
+  <div style={{ fontSize: 14, fontWeight: 600, color: C.text, marginBottom: "0.875rem" }}>
     {children}
   </div>
 );
@@ -58,14 +58,15 @@ function MonthPicker({ availableMonths, selected, onSelect }) {
 
 function StatusBadge({ status }) {
   const map = {
-    pending: { color: C.textMuted, bg: "transparent", label: "Aguardando..." },
-    processing: { color: C.amber, bg: C.amberGlow, label: "Processando..." },
-    completed: { color: C.success, bg: C.successBg, label: "Concluído" },
-    error: { color: C.danger, bg: C.dangerBg, label: "Erro" },
+    pending: { color: C.textMuted, label: "Aguardando" },
+    processing: { color: C.amber, label: "Processando" },
+    completed: { color: C.success, label: "Concluído" },
+    error: { color: C.danger, label: "Erro" },
   };
   const s = map[status] || map.pending;
   return (
-    <span style={{ fontSize: 11, fontWeight: 600, padding: "3px 10px", borderRadius: 20, background: s.bg, color: s.color, border: `1px solid ${s.color}20` }}>
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, color: s.color }}>
+      <span style={{ width: 6, height: 6, borderRadius: "50%", background: s.color, flexShrink: 0, display: "inline-block" }} />
       {s.label}
     </span>
   );
@@ -129,15 +130,15 @@ function FeedbackResult({ feedback }) {
               <div key={i} style={{ padding: "12px 14px", borderRadius: 10, background: C.surface, border: `1px solid ${C.border}` }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
                   <div>
-                    <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 20, background: C.amberGlow, color: C.amber, marginRight: 8 }}>
-                      {r.category}
+                    <span style={{ fontSize: 11, color: C.textMuted, marginRight: 6 }}>
+                      {r.category} ·
                     </span>
                     <span style={{ fontSize: 13, color: C.text }}>{r.description}</span>
                   </div>
                   <span style={{ fontSize: 13, fontWeight: 600, color: C.danger }}>{fmt(r.amount)}</span>
                 </div>
                 <div style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.5 }}>
-                  💡 {r.suggestion}
+                  {r.suggestion}
                   {r.potential_saving > 0 && (
                     <span style={{ color: C.success, marginLeft: 8 }}>Economia: {fmt(r.potential_saving)}</span>
                   )}
