@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   PieChart, Pie, Cell, Tooltip,
 } from "recharts";
@@ -191,8 +191,71 @@ function HorizontalBarChart({ data }) {
 }
 
 // ─── Transactions Table ──────────────────────────────────────────────────────
+// sortValue cycles: null → "asc" → "desc" → null
 function TransactionsTable({ transactions }) {
-  if (!transactions?.items?.length) {
+  const [activeCats, setActiveCats] = useState(new Set());
+  const [valueSearch, setValueSearch] = useState("");
+  const [sortValue, setSortValue] = useState(null); // null | "asc" | "desc"
+
+  const allItems = transactions?.items || [];
+
+  const uniqueCategories = useMemo(() => {
+    const seen = new Map();
+    for (const t of allItems) {
+      const name = t.category?.name || "Sem categoria";
+      if (!seen.has(name)) seen.set(name, name);
+    }
+    return Array.from(seen.keys());
+  }, [allItems]);
+
+  const toggleCat = (name) => {
+    setActiveCats((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name);
+      else next.add(name);
+      return next;
+    });
+  };
+
+  const clearFilters = () => {
+    setActiveCats(new Set());
+    setValueSearch("");
+    setSortValue(null);
+  };
+
+  const cycleSortValue = () => {
+    setSortValue((prev) => prev === null ? "asc" : prev === "asc" ? "desc" : null);
+  };
+
+  const hasActiveFilters = activeCats.size > 0 || valueSearch.trim() !== "" || sortValue !== null;
+
+  const filtered = useMemo(() => {
+    let items = allItems;
+
+    if (activeCats.size > 0) {
+      items = items.filter((t) => activeCats.has(t.category?.name || "Sem categoria"));
+    }
+
+    if (valueSearch.trim() !== "") {
+      const needle = valueSearch.trim().replace(",", ".");
+      items = items.filter((t) => {
+        const amountStr = parseFloat(t.amount).toFixed(2);
+        return amountStr.startsWith(needle) || amountStr === needle;
+      });
+    }
+
+    if (sortValue === "asc") {
+      items = [...items].sort((a, b) => parseFloat(a.amount) - parseFloat(b.amount));
+    } else if (sortValue === "desc") {
+      items = [...items].sort((a, b) => parseFloat(b.amount) - parseFloat(a.amount));
+    }
+
+    return items;
+  }, [allItems, activeCats, valueSearch, sortValue]);
+
+  const sortIcon = sortValue === "asc" ? "↑" : sortValue === "desc" ? "↓" : "↕";
+
+  if (allItems.length === 0) {
     return (
       <Card>
         <SectionTitle>Transações Recentes</SectionTitle>
@@ -206,56 +269,140 @@ function TransactionsTable({ transactions }) {
   return (
     <Card>
       <SectionTitle>Transações Recentes</SectionTitle>
-      <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, tableLayout: "fixed" }}>
-        <colgroup>
-          <col />
-          <col style={{ width: 92 }} />
-          <col style={{ width: 72 }} />
-          <col style={{ width: 82 }} />
-        </colgroup>
-        <thead>
-          <tr style={{ borderBottom: `1px solid ${C.border}` }}>
-            <th style={{ textAlign: "left", padding: "0 8px 10px", color: C.textMuted, fontWeight: 500, fontSize: 11 }}>Descrição</th>
-            <th style={{ textAlign: "left", padding: "0 8px 10px", color: C.textMuted, fontWeight: 500, fontSize: 11 }}>Categoria</th>
-            <th style={{ textAlign: "left", padding: "0 8px 10px", color: C.textMuted, fontWeight: 500, fontSize: 11 }}>Data</th>
-            <th style={{ textAlign: "right", padding: "0 8px 10px", color: C.textMuted, fontWeight: 500, fontSize: 11 }}>Valor</th>
-          </tr>
-        </thead>
-        <tbody>
-          {transactions.items.map((t) => {
-            const catName = t.category?.name || "Sem categoria";
-            const formattedDate = new Date(t.date + 'T00:00:00').toLocaleDateString('pt-BR');
+
+      {/* ── Category pills ── */}
+      {uniqueCategories.length > 0 && (
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: "0.75rem" }}>
+          {uniqueCategories.map((name) => {
+            const color = getCatColor(name);
+            const active = activeCats.has(name);
             return (
-              <tr key={t.id} style={{ borderBottom: `1px solid ${C.border}` }}
-                onMouseEnter={(e) => e.currentTarget.style.background = C.surface}
-                onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
-                <td style={{ padding: "10px 8px", color: C.text, fontWeight: 500,
-                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                  {t.description || "—"}
-                </td>
-                <td style={{ padding: "10px 8px", overflow: "hidden" }}>
-                  <span style={{
-                    display: "inline-flex", alignItems: "center", gap: 5,
-                    fontSize: 11, fontWeight: 500, padding: "3px 8px", borderRadius: 20,
-                    background: `${getCatColor(catName)}20`, color: getCatColor(catName),
-                    overflow: "hidden", maxWidth: "100%",
-                  }}>
-                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{catName}</span>
-                  </span>
-                </td>
-                <td style={{ padding: "10px 8px", color: C.textMuted, whiteSpace: "nowrap" }}>
-                  {formattedDate}
-                </td>
-                <td style={{ padding: "10px 8px", fontWeight: 600,
-                  color: t.type === "credit" ? C.success : C.danger,
-                  textAlign: "right", whiteSpace: "nowrap" }}>
-                  {t.type === "credit" ? "+" : "-"}{fmt(t.amount)}
-                </td>
-              </tr>
+              <button
+                key={name}
+                onClick={() => toggleCat(name)}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 5,
+                  fontSize: 11, fontWeight: 500, padding: "4px 10px", borderRadius: 20,
+                  border: `1px solid ${active ? color : C.border}`,
+                  background: active ? `${color}28` : "transparent",
+                  color: active ? color : C.textMuted,
+                  cursor: "pointer", transition: "all 0.15s",
+                }}
+              >
+                <span style={{
+                  width: 6, height: 6, borderRadius: "50%",
+                  background: active ? color : C.textDim, flexShrink: 0,
+                }} />
+                {name}
+              </button>
             );
           })}
-        </tbody>
-      </table>
+          {hasActiveFilters && (
+            <button
+              onClick={clearFilters}
+              style={{
+                fontSize: 11, fontWeight: 500, padding: "4px 10px", borderRadius: 20,
+                border: `1px solid ${C.border}`, background: "transparent",
+                color: C.textMuted, cursor: "pointer",
+              }}
+            >
+              × Limpar
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* ── Value search ── */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: "0.75rem" }}>
+        <div style={{ position: "relative", flex: 1, maxWidth: 180 }}>
+          <span style={{
+            position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)",
+            fontSize: 11, color: C.textMuted, pointerEvents: "none",
+          }}>R$</span>
+          <input
+            type="text"
+            inputMode="decimal"
+            placeholder="buscar por valor..."
+            value={valueSearch}
+            onChange={(e) => setValueSearch(e.target.value)}
+            style={{
+              width: "100%", paddingLeft: 26, paddingRight: 10,
+              paddingTop: 5, paddingBottom: 5,
+              background: C.surface, border: `1px solid ${valueSearch ? C.amber : C.border}`,
+              borderRadius: 8, color: C.text, fontSize: 12,
+              outline: "none", boxSizing: "border-box",
+            }}
+          />
+        </div>
+        <div style={{ fontSize: 11, color: C.textMuted, marginLeft: "auto" }}>
+          Exibindo <strong style={{ color: C.text }}>{filtered.length}</strong> de{" "}
+          <strong style={{ color: C.text }}>{allItems.length}</strong>
+        </div>
+      </div>
+
+      {/* ── Table ── */}
+      {filtered.length === 0 ? (
+        <div style={{ fontSize: 13, color: C.textMuted, padding: "0.75rem 0" }}>
+          Nenhuma transação corresponde aos filtros aplicados.
+        </div>
+      ) : (
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, tableLayout: "fixed" }}>
+          <colgroup>
+            <col />
+            <col style={{ width: 92 }} />
+            <col style={{ width: 72 }} />
+            <col style={{ width: 92 }} />
+          </colgroup>
+          <thead>
+            <tr style={{ borderBottom: `1px solid ${C.border}` }}>
+              <th style={{ textAlign: "left", padding: "0 8px 10px", color: C.textMuted, fontWeight: 500, fontSize: 11 }}>Descrição</th>
+              <th style={{ textAlign: "left", padding: "0 8px 10px", color: C.textMuted, fontWeight: 500, fontSize: 11 }}>Categoria</th>
+              <th style={{ textAlign: "left", padding: "0 8px 10px", color: C.textMuted, fontWeight: 500, fontSize: 11 }}>Data</th>
+              <th
+                style={{ textAlign: "right", padding: "0 8px 10px", color: sortValue ? C.amber : C.textMuted, fontWeight: 500, fontSize: 11, cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }}
+                onClick={cycleSortValue}
+                title="Ordenar por valor"
+              >
+                Valor {sortIcon}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((t) => {
+              const catName = t.category?.name || "Sem categoria";
+              const formattedDate = new Date(t.date + 'T00:00:00').toLocaleDateString('pt-BR');
+              return (
+                <tr key={t.id} style={{ borderBottom: `1px solid ${C.border}` }}
+                  onMouseEnter={(e) => e.currentTarget.style.background = C.surface}
+                  onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
+                  <td style={{ padding: "10px 8px", color: C.text, fontWeight: 500,
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {t.description || "—"}
+                  </td>
+                  <td style={{ padding: "10px 8px", overflow: "hidden" }}>
+                    <span style={{
+                      display: "inline-flex", alignItems: "center", gap: 5,
+                      fontSize: 11, fontWeight: 500, padding: "3px 8px", borderRadius: 20,
+                      background: `${getCatColor(catName)}20`, color: getCatColor(catName),
+                      overflow: "hidden", maxWidth: "100%",
+                    }}>
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{catName}</span>
+                    </span>
+                  </td>
+                  <td style={{ padding: "10px 8px", color: C.textMuted, whiteSpace: "nowrap" }}>
+                    {formattedDate}
+                  </td>
+                  <td style={{ padding: "10px 8px", fontWeight: 600,
+                    color: t.type === "credit" ? C.success : C.danger,
+                    textAlign: "right", whiteSpace: "nowrap" }}>
+                    {t.type === "credit" ? "+" : "-"}{fmt(t.amount)}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
     </Card>
   );
 }
