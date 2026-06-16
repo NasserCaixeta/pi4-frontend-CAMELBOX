@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const COLORS = {
@@ -672,7 +672,9 @@ function RegisterForm({ onSwitch }) {
 }
 
 export default function AuthPage() {
-  const [tab, setTab] = useState("login");
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get("mode") === "register" ? "register" : "login";
+  const [tab, setTab] = useState(initialTab);
 
   return (
     <div style={styles.root}>
