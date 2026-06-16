@@ -89,6 +89,10 @@ const container = {
   margin: "0 auto",
 };
 
+function scrollToSection(id) {
+  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 function Logo() {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -141,14 +145,29 @@ function Header() {
         <Logo />
         <nav style={{ display: "flex", alignItems: "center", gap: 18 }}>
           {[
-            ["Produto", "#produto"],
-            ["Como funciona", "#como-funciona"],
-            ["Planos", "#planos"],
-            ["Sobre", "#sobre"],
-          ].map(([label, href]) => (
-            <a key={href} className="landing-nav-link" href={href} style={{ color: C.textMuted, fontSize: 13, textDecoration: "none", fontWeight: 500 }}>
+            ["Produto", "produto"],
+            ["Como funciona", "como-funciona"],
+            ["Planos", "planos"],
+            ["Sobre", "sobre"],
+          ].map(([label, id]) => (
+            <button
+              key={id}
+              type="button"
+              className="landing-nav-link"
+              onClick={() => scrollToSection(id)}
+              style={{
+                background: "none",
+                border: "none",
+                padding: 0,
+                color: C.textMuted,
+                fontSize: 13,
+                fontWeight: 500,
+                fontFamily: "inherit",
+                cursor: "pointer",
+              }}
+            >
               {label}
-            </a>
+            </button>
           ))}
           <CTAButton />
         </nav>
@@ -222,12 +241,17 @@ function Hero() {
         </p>
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <CTAButton />
-          <a href="#como-funciona" style={{
+          <button
+            type="button"
+            onClick={() => scrollToSection("como-funciona")}
+            style={{
             padding: "10px 15px", borderRadius: 9, border: `1px solid ${C.border}`,
-            color: C.amber, fontSize: 14, fontWeight: 700, textDecoration: "none",
-          }}>
+            background: "transparent", color: C.amber, fontSize: 14, fontWeight: 700,
+            fontFamily: "inherit", cursor: "pointer",
+          }}
+          >
             Ver como funciona
-          </a>
+          </button>
         </div>
         <div style={{ marginTop: 14, fontSize: 12, color: C.textMuted }}>
           Comece com 3 análises grátis.
