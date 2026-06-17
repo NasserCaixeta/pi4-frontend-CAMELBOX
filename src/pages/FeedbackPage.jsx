@@ -73,21 +73,132 @@ function StatusBadge({ status }) {
   );
 }
 
+function ConfidenceBadge({ value }) {
+  const map = {
+    high: { label: "Confiança alta", color: C.success, bg: C.successBg },
+    medium: { label: "Confiança média", color: C.amber, bg: C.amberGlow },
+    low: { label: "Confiança baixa", color: C.textMuted, bg: C.surface },
+  };
+  const item = map[value] || map.medium;
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", padding: "3px 8px",
+      borderRadius: 999, background: item.bg, color: item.color,
+      fontSize: 11, fontWeight: 600, whiteSpace: "nowrap",
+    }}>
+      {item.label}
+    </span>
+  );
+}
+
+function InsightCard({ insight, mode = "saving" }) {
+  return (
+    <div style={{ padding: "12px 14px", borderRadius: 10, background: C.surface, border: `1px solid ${C.border}` }}>
+      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 8 }}>
+        <div style={{ minWidth: 0 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 3 }}>
+            {insight.title || insight.description}
+          </div>
+          <div style={{ fontSize: 11, color: C.textMuted }}>
+            {insight.category || "Geral"} · {mode === "saving" ? "Reduzir" : "Acompanhar"}
+          </div>
+        </div>
+        <ConfidenceBadge value={insight.confidence} />
+      </div>
+
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 9 }}>
+        <span style={{ fontSize: 12, color: C.textMuted }}>
+          Valor analisado: <strong style={{ color: C.text }}>{fmt(insight.amount || 0)}</strong>
+        </span>
+        {insight.potential_saving > 0 && (
+          <span style={{ fontSize: 12, color: C.success }}>
+            Economia potencial: <strong>{fmt(insight.potential_saving)}</strong>
+          </span>
+        )}
+      </div>
+
+      {insight.reason && (
+        <p style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.55, margin: "0 0 7px" }}>
+          {insight.reason}
+        </p>
+      )}
+      {insight.suggestion && (
+        <p style={{ fontSize: 12, color: C.text, lineHeight: 1.55, margin: 0 }}>
+          {insight.suggestion}
+        </p>
+      )}
+      {insight.evidence?.length > 0 && (
+        <div style={{ marginTop: 9, display: "flex", flexDirection: "column", gap: 4 }}>
+          {insight.evidence.slice(0, 3).map((e, i) => (
+            <div key={i} style={{ fontSize: 11, color: C.textMuted }}>
+              Base: {e}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function FeedbackResult({ feedback }) {
   const subs = feedback.subscriptions || [];
-  const reducible = feedback.reducible_expenses || [];
+  const opportunities = feedback.saving_opportunities || feedback.reducible_expenses || [];
+  const watchlist = feedback.watchlist || [];
+  const highlights = feedback.highlights || [];
   const totalSub = subs.reduce((s, i) => s + (i.amount || 0), 0);
-  const totalSaving = reducible.reduce((s, i) => s + (i.potential_saving || 0), 0);
+  const totalSaving = feedback.total_potential_saving ?? opportunities.reduce((s, i) => s + (i.potential_saving || 0), 0);
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
       {/* Summary */}
-      {feedback.summary && (
-        <Card>
-          <SectionTitle>Resumo da Análise</SectionTitle>
+      <Card>
+        <SectionTitle>Resumo da Análise</SectionTitle>
+        {feedback.summary && (
           <p style={{ fontSize: 14, color: C.text, lineHeight: 1.7, margin: 0 }}>{feedback.summary}</p>
-        </Card>
-      )}
+        )}
+        {highlights.length > 0 && (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8, marginTop: feedback.summary ? "1rem" : 0 }}>
+            {highlights.map((h, i) => (
+              <div key={i} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px 12px", fontSize: 12, color: C.textMuted, lineHeight: 1.5 }}>
+                {h}
+              </div>
+            ))}
+          </div>
+        )}
+      </Card>
+
+      <Card>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <div>
+            <SectionTitle>Economia Potencial Estimada</SectionTitle>
+            <p style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.5, margin: 0 }}>
+              Estimativa conservadora baseada nos padrões encontrados nas suas transações do mês.
+            </p>
+          </div>
+          <div style={{ fontSize: 24, fontWeight: 800, color: totalSaving > 0 ? C.success : C.textMuted }}>
+            {fmt(totalSaving || 0)}
+          </div>
+        </div>
+      </Card>
+
+      {/* Saving opportunities */}
+      <Card>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
+          <SectionTitle style={{ marginBottom: 0 }}>Oportunidades Priorizadas</SectionTitle>
+          {totalSaving > 0 && (
+            <span style={{ fontSize: 13, fontWeight: 600, color: C.success }}>Total: {fmt(totalSaving)}</span>
+          )}
+        </div>
+        {opportunities.length === 0 ? (
+          <p style={{ fontSize: 13, color: C.textMuted }}>Nenhuma oportunidade com evidência suficiente neste período.</p>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {opportunities.map((item, i) => (
+              <InsightCard key={`${item.title || item.description}-${i}`} insight={item} />
+            ))}
+          </div>
+        )}
+      </Card>
 
       {/* Subscriptions */}
       <Card>
@@ -105,8 +216,12 @@ function FeedbackResult({ feedback }) {
                 padding: "10px 12px", borderRadius: 10, background: C.surface, border: `1px solid ${C.border}`,
               }}>
                 <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{s.name}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                    <span style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{s.name}</span>
+                    {s.confidence && <ConfidenceBadge value={s.confidence} />}
+                  </div>
                   {s.description && <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>{s.description}</div>}
+                  {s.reason && <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>{s.reason}</div>}
                 </div>
                 <div style={{ fontSize: 13, fontWeight: 600, color: C.amber }}>{fmt(s.amount)}</div>
               </div>
@@ -115,36 +230,17 @@ function FeedbackResult({ feedback }) {
         )}
       </Card>
 
-      {/* Reducible expenses */}
+      {/* Watchlist */}
       <Card>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
-          <SectionTitle style={{ marginBottom: 0 }}>Gastos Reduzíveis</SectionTitle>
-          {totalSaving > 0 && (
-            <span style={{ fontSize: 13, fontWeight: 600, color: C.success }}>Economia potencial: {fmt(totalSaving)}</span>
-          )}
+          <SectionTitle style={{ marginBottom: 0 }}>Pontos para Acompanhar</SectionTitle>
         </div>
-        {reducible.length === 0 ? (
-          <p style={{ fontSize: 13, color: C.textMuted }}>Nenhum gasto reduzível identificado.</p>
+        {watchlist.length === 0 ? (
+          <p style={{ fontSize: 13, color: C.textMuted }}>Nenhum ponto relevante de acompanhamento neste período.</p>
         ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {reducible.map((r, i) => (
-              <div key={i} style={{ padding: "12px 14px", borderRadius: 10, background: C.surface, border: `1px solid ${C.border}` }}>
-                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-                  <div>
-                    <span style={{ fontSize: 11, color: C.textMuted, marginRight: 6 }}>
-                      {r.category} ·
-                    </span>
-                    <span style={{ fontSize: 13, color: C.text }}>{r.description}</span>
-                  </div>
-                  <span style={{ fontSize: 13, fontWeight: 600, color: C.danger }}>{fmt(r.amount)}</span>
-                </div>
-                <div style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.5 }}>
-                  {r.suggestion}
-                  {r.potential_saving > 0 && (
-                    <span style={{ color: C.success, marginLeft: 8 }}>Economia: {fmt(r.potential_saving)}</span>
-                  )}
-                </div>
-              </div>
+            {watchlist.map((item, i) => (
+              <InsightCard key={`${item.title || item.description}-${i}`} insight={item} mode="watch" />
             ))}
           </div>
         )}
