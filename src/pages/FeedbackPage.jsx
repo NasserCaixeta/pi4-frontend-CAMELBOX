@@ -22,33 +22,25 @@ const C = {
 const fmt = (v) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
-const Card = ({ children, style }) => (
-  <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: "1.25rem", ...style }}>
-    {children}
-  </div>
+const Card = ({ children, className = "" }) => (
+  <div className={`cb-card feedback-card${className ? ` ${className}` : ""}`}>{children}</div>
 );
 
 const SectionTitle = ({ children }) => (
-  <div style={{ fontSize: 14, fontWeight: 600, color: C.text, marginBottom: "0.875rem" }}>
-    {children}
-  </div>
+  <div className="cb-section-title">{children}</div>
 );
 
 function MonthPicker({ availableMonths, selected, onSelect }) {
   return (
-    <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+    <div className="feedback-month-picker">
       {availableMonths.map((m) => {
         const active = selected?.month === m.month && selected?.year === m.year;
         return (
-          <button key={`${m.year}-${m.month}`} onClick={() => onSelect(m)}
-            style={{
-              padding: "6px 14px", borderRadius: 8, border: "1px solid",
-              borderColor: active ? C.amber : C.border,
-              background: active ? C.amberGlow : "transparent",
-              color: active ? C.amber : C.textMuted,
-              fontSize: 12, fontWeight: active ? 600 : 400,
-              cursor: "pointer", fontFamily: "inherit",
-            }}>
+          <button
+            key={`${m.year}-${m.month}`}
+            className={`feedback-month-button${active ? " is-active" : ""}`}
+            onClick={() => onSelect(m)}
+          >
             {m.label}
           </button>
         );
@@ -66,8 +58,8 @@ function StatusBadge({ status }) {
   };
   const s = map[status] || map.pending;
   return (
-    <span style={{ display: "inline-flex", alignItems: "center", gap: 5, fontSize: 12, color: s.color }}>
-      <span style={{ width: 6, height: 6, borderRadius: "50%", background: s.color, flexShrink: 0, display: "inline-block" }} />
+    <span className="cb-status-badge" style={{ color: s.color }}>
+      <span className="cb-status-badge__dot" style={{ background: s.color }} />
       {s.label}
     </span>
   );
@@ -81,11 +73,7 @@ function ConfidenceBadge({ value }) {
   };
   const item = map[value] || map.medium;
   return (
-    <span style={{
-      display: "inline-flex", alignItems: "center", padding: "3px 8px",
-      borderRadius: 999, background: item.bg, color: item.color,
-      fontSize: 11, fontWeight: 600, whiteSpace: "nowrap",
-    }}>
+    <span className="cb-confidence-badge" style={{ background: item.bg, color: item.color }}>
       {item.label}
     </span>
   );
@@ -93,44 +81,44 @@ function ConfidenceBadge({ value }) {
 
 function InsightCard({ insight, mode = "saving" }) {
   return (
-    <div style={{ padding: "12px 14px", borderRadius: 10, background: C.surface, border: `1px solid ${C.border}` }}>
-      <div style={{ display: "flex", justifyContent: "space-between", gap: 12, marginBottom: 8 }}>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontSize: 13, fontWeight: 700, color: C.text, marginBottom: 3 }}>
+    <div className="cb-insight-card">
+      <div className="feedback-insight-head">
+        <div className="feedback-min-width">
+          <div className="feedback-insight-title">
             {insight.title || insight.description}
           </div>
-          <div style={{ fontSize: 11, color: C.textMuted }}>
+          <div className="feedback-insight-meta">
             {insight.category || "Geral"} · {mode === "saving" ? "Reduzir" : "Acompanhar"}
           </div>
         </div>
         <ConfidenceBadge value={insight.confidence} />
       </div>
 
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 9 }}>
-        <span style={{ fontSize: 12, color: C.textMuted }}>
-          Valor analisado: <strong style={{ color: C.text }}>{fmt(insight.amount || 0)}</strong>
+      <div className="feedback-insight-values">
+        <span className="feedback-muted-text">
+          Valor analisado: <strong className="feedback-text">{fmt(insight.amount || 0)}</strong>
         </span>
         {insight.potential_saving > 0 && (
-          <span style={{ fontSize: 12, color: C.success }}>
+          <span className="feedback-success-text">
             Economia potencial: <strong>{fmt(insight.potential_saving)}</strong>
           </span>
         )}
       </div>
 
       {insight.reason && (
-        <p style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.55, margin: "0 0 7px" }}>
+        <p className="feedback-insight-reason">
           {insight.reason}
         </p>
       )}
       {insight.suggestion && (
-        <p style={{ fontSize: 12, color: C.text, lineHeight: 1.55, margin: 0 }}>
+        <p className="feedback-insight-suggestion">
           {insight.suggestion}
         </p>
       )}
       {insight.evidence?.length > 0 && (
-        <div style={{ marginTop: 9, display: "flex", flexDirection: "column", gap: 4 }}>
+        <div className="feedback-evidence-list">
           {insight.evidence.slice(0, 3).map((e, i) => (
-            <div key={i} style={{ fontSize: 11, color: C.textMuted }}>
+            <div key={i} className="feedback-evidence-item">
               Base: {e}
             </div>
           ))}
@@ -149,17 +137,17 @@ function FeedbackResult({ feedback }) {
   const totalSaving = feedback.total_potential_saving ?? opportunities.reduce((s, i) => s + (i.potential_saving || 0), 0);
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "1rem" }}>
+    <div className="feedback-stack">
       {/* Summary */}
       <Card>
         <SectionTitle>Resumo da Análise</SectionTitle>
         {feedback.summary && (
-          <p style={{ fontSize: 14, color: C.text, lineHeight: 1.7, margin: 0 }}>{feedback.summary}</p>
+          <p className="feedback-summary">{feedback.summary}</p>
         )}
         {highlights.length > 0 && (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 8, marginTop: feedback.summary ? "1rem" : 0 }}>
+          <div className="feedback-highlights" style={{ marginTop: feedback.summary ? "1rem" : 0 }}>
             {highlights.map((h, i) => (
-              <div key={i} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: "10px 12px", fontSize: 12, color: C.textMuted, lineHeight: 1.5 }}>
+              <div key={i} className="feedback-highlight">
                 {h}
               </div>
             ))}
@@ -168,14 +156,14 @@ function FeedbackResult({ feedback }) {
       </Card>
 
       <Card>
-        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+        <div className="feedback-summary-row">
           <div>
             <SectionTitle>Economia Potencial Estimada</SectionTitle>
-            <p style={{ fontSize: 12, color: C.textMuted, lineHeight: 1.5, margin: 0 }}>
+            <p className="feedback-muted-paragraph">
               Estimativa conservadora baseada nos padrões encontrados nas suas transações do mês.
             </p>
           </div>
-          <div style={{ fontSize: 24, fontWeight: 800, color: totalSaving > 0 ? C.success : C.textMuted }}>
+          <div className="feedback-total-saving" style={{ color: totalSaving > 0 ? C.success : C.textMuted }}>
             {fmt(totalSaving || 0)}
           </div>
         </div>
@@ -183,16 +171,16 @@ function FeedbackResult({ feedback }) {
 
       {/* Saving opportunities */}
       <Card>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
-          <SectionTitle style={{ marginBottom: 0 }}>Oportunidades Priorizadas</SectionTitle>
+        <div className="feedback-card-head">
+          <SectionTitle>Oportunidades Priorizadas</SectionTitle>
           {totalSaving > 0 && (
-            <span style={{ fontSize: 13, fontWeight: 600, color: C.success }}>Total: {fmt(totalSaving)}</span>
+            <span className="feedback-success-total">Total: {fmt(totalSaving)}</span>
           )}
         </div>
         {opportunities.length === 0 ? (
-          <p style={{ fontSize: 13, color: C.textMuted }}>Nenhuma oportunidade com evidência suficiente neste período.</p>
+          <p className="feedback-empty-text">Nenhuma oportunidade com evidência suficiente neste período.</p>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div className="feedback-insight-list">
             {opportunities.map((item, i) => (
               <InsightCard key={`${item.title || item.description}-${i}`} insight={item} />
             ))}
@@ -202,28 +190,25 @@ function FeedbackResult({ feedback }) {
 
       {/* Subscriptions */}
       <Card>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
-          <SectionTitle style={{ marginBottom: 0 }}>Assinaturas Identificadas</SectionTitle>
-          <span style={{ fontSize: 13, fontWeight: 600, color: C.amber }}>{fmt(totalSub)}/mês</span>
+        <div className="feedback-card-head">
+          <SectionTitle>Assinaturas Identificadas</SectionTitle>
+          <span className="feedback-amber-total">{fmt(totalSub)}/mês</span>
         </div>
         {subs.length === 0 ? (
-          <p style={{ fontSize: 13, color: C.textMuted }}>Nenhuma assinatura identificada neste período.</p>
+          <p className="feedback-empty-text">Nenhuma assinatura identificada neste período.</p>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <div className="feedback-subscription-list">
             {subs.map((s, i) => (
-              <div key={i} style={{
-                display: "flex", justifyContent: "space-between", alignItems: "center",
-                padding: "10px 12px", borderRadius: 10, background: C.surface, border: `1px solid ${C.border}`,
-              }}>
+              <div key={i} className="feedback-subscription-item">
                 <div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: C.text }}>{s.name}</span>
+                  <div className="feedback-subscription-title-row">
+                    <span className="feedback-subscription-name">{s.name}</span>
                     {s.confidence && <ConfidenceBadge value={s.confidence} />}
                   </div>
-                  {s.description && <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>{s.description}</div>}
-                  {s.reason && <div style={{ fontSize: 11, color: C.textMuted, marginTop: 2 }}>{s.reason}</div>}
+                  {s.description && <div className="feedback-subscription-meta">{s.description}</div>}
+                  {s.reason && <div className="feedback-subscription-meta">{s.reason}</div>}
                 </div>
-                <div style={{ fontSize: 13, fontWeight: 600, color: C.amber }}>{fmt(s.amount)}</div>
+                <div className="feedback-subscription-amount">{fmt(s.amount)}</div>
               </div>
             ))}
           </div>
@@ -232,13 +217,13 @@ function FeedbackResult({ feedback }) {
 
       {/* Watchlist */}
       <Card>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1rem" }}>
-          <SectionTitle style={{ marginBottom: 0 }}>Pontos para Acompanhar</SectionTitle>
+        <div className="feedback-card-head">
+          <SectionTitle>Pontos para Acompanhar</SectionTitle>
         </div>
         {watchlist.length === 0 ? (
-          <p style={{ fontSize: 13, color: C.textMuted }}>Nenhum ponto relevante de acompanhamento neste período.</p>
+          <p className="feedback-empty-text">Nenhum ponto relevante de acompanhamento neste período.</p>
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          <div className="feedback-insight-list">
             {watchlist.map((item, i) => (
               <InsightCard key={`${item.title || item.description}-${i}`} insight={item} mode="watch" />
             ))}
@@ -294,47 +279,45 @@ export default function FeedbackPage() {
   const isProcessing = activeFeedback && (activeFeedback.status === "pending" || activeFeedback.status === "processing");
 
   return (
-    <div style={{ padding: isMobile ? "1rem" : "1.5rem 2rem", fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif", color: C.text }}>
-      <div style={{ marginBottom: "1.75rem" }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.4px", margin: 0 }}>Feedback de Gastos</h1>
-        <p style={{ fontSize: 13, color: C.textMuted, marginTop: 4 }}>
+    <div className={`feedback-page${isMobile ? " is-mobile" : ""}`}>
+      <div className="feedback-header">
+        <h1 className="feedback-title">Feedback de Gastos</h1>
+        <p className="feedback-subtitle">
           A IA analisa suas transações e sugere como melhorar seus gastos
         </p>
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 340px", gap: "1.25rem", alignItems: "start" }}>
+      <div className="feedback-layout">
         {/* Main content */}
         <div>
           {/* Generate section */}
-          <Card style={{ marginBottom: "1.25rem" }}>
+          <Card className="feedback-generate-card">
             <SectionTitle>Gerar Nova Análise</SectionTitle>
             {availableMonths.length === 0 ? (
-              <p style={{ fontSize: 13, color: C.textMuted }}>Nenhum mês disponível. Envie um extrato primeiro.</p>
+              <p className="feedback-empty-text">Nenhum mês disponível. Envie um extrato primeiro.</p>
             ) : (
               <>
-                <div style={{ marginBottom: "1rem" }}>
-                  <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 8 }}>Selecione o mês</div>
+                <div className="feedback-field-group">
+                  <div className="feedback-field-label">Selecione o mês</div>
                   <MonthPicker availableMonths={availableMonths} selected={selectedMonth} onSelect={setSelectedMonth} />
                 </div>
                 {existingForSelected && existingForSelected.status !== "error" ? (
-                  <div style={{
-                    padding: "10px 14px", borderRadius: 10, background: C.successBg,
-                    color: C.success, fontSize: 13, marginBottom: "0.75rem",
-                  }}>
+                  <div className="feedback-alert feedback-alert--success">
                     ✓ Já existe uma análise para {selectedMonth && monthLabel(selectedMonth.month, selectedMonth.year)}.
                     <button
                       onClick={() => handleSelectHistory(existingForSelected)}
-                      style={{ background: "none", border: "none", color: C.amber, fontSize: 13, cursor: "pointer", marginLeft: 8, fontFamily: "inherit" }}>
+                      className="feedback-inline-action"
+                    >
                       Ver resultado →
                     </button>
                   </div>
                 ) : (
-                  <div style={{ fontSize: 12, color: C.textMuted, marginBottom: "0.75rem", padding: "8px 12px", background: C.surface, borderRadius: 8, border: `1px solid ${C.border}` }}>
+                  <div className="feedback-credit-note">
                     ⚡ Esta análise consome 1 crédito do seu plano.
                   </div>
                 )}
                 {genError && (
-                  <div style={{ padding: "8px 12px", borderRadius: 8, background: C.dangerBg, color: C.danger, fontSize: 12, marginBottom: "0.75rem" }}>
+                  <div className="feedback-alert feedback-alert--danger">
                     {genError}
                   </div>
                 )}
@@ -342,12 +325,7 @@ export default function FeedbackPage() {
                   <button
                     onClick={handleGenerate}
                     disabled={generating || !selectedMonth}
-                    style={{
-                      padding: "10px 20px", borderRadius: 9, border: "none",
-                      background: C.amber, color: C.bg, fontSize: 13, fontWeight: 600,
-                      cursor: generating || !selectedMonth ? "not-allowed" : "pointer",
-                      fontFamily: "inherit", opacity: generating || !selectedMonth ? 0.6 : 1,
-                    }}
+                    className="cb-button cb-button--primary feedback-generate-button"
                   >
                     {generating ? "Gerando análise..." : "Gerar Análise de Gastos"}
                   </button>
@@ -359,15 +337,15 @@ export default function FeedbackPage() {
           {/* Result */}
           {activeFeedback && (
             <div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: "0.75rem" }}>
-                <h2 style={{ fontSize: 15, fontWeight: 600, margin: 0 }}>
+              <div className="feedback-result-head">
+                <h2 className="feedback-result-title">
                   {monthLabel(activeFeedback.month, activeFeedback.year)}
                 </h2>
                 <StatusBadge status={activeFeedback.status} />
               </div>
               {isProcessing ? (
                 <Card>
-                  <div style={{ padding: "1.5rem 0.5rem" }}>
+                  <div className="feedback-progress-wrap">
                     <ProgressBar
                       label="Analisando suas transações..."
                       sublabel="A IA está identificando padrões e gerando insights. Isso pode levar alguns segundos."
@@ -376,7 +354,7 @@ export default function FeedbackPage() {
                 </Card>
               ) : activeFeedback.status === "error" ? (
                 <Card>
-                  <div style={{ fontSize: 14, color: C.danger }}>Ocorreu um erro ao gerar o feedback. Tente novamente.</div>
+                  <div className="feedback-error-text">Ocorreu um erro ao gerar o feedback. Tente novamente.</div>
                 </Card>
               ) : activeFeedback.status === "completed" ? (
                 <FeedbackResult feedback={activeFeedback} />
@@ -390,32 +368,29 @@ export default function FeedbackPage() {
           <Card>
             <SectionTitle>Histórico de Análises</SectionTitle>
             {loading ? (
-              <div style={{ fontSize: 13, color: C.textMuted }}>Carregando...</div>
+              <div className="feedback-empty-text">Carregando...</div>
             ) : feedbacks.length === 0 ? (
-              <div style={{ fontSize: 13, color: C.textMuted }}>Nenhuma análise ainda.</div>
+              <div className="feedback-empty-text">Nenhuma análise ainda.</div>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div className="feedback-history-list">
                 {feedbacks.map((fb) => {
                   const isActive = activeFeedback?.id === fb.id;
                   return (
-                    <div key={fb.id} style={{
-                      padding: "10px 12px", borderRadius: 10,
-                      background: isActive ? C.amberGlow : C.surface,
-                      border: `1px solid ${isActive ? C.amber : C.border}`,
-                      cursor: "pointer",
-                    }}
+                    <div
+                      key={fb.id}
+                      className={`cb-history-item${isActive ? " is-active" : ""}`}
                       onClick={() => handleSelectHistory(fb)}>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                        <span style={{ fontSize: 13, fontWeight: 500, color: C.text }}>{monthLabel(fb.month, fb.year)}</span>
+                      <div className="feedback-history-head">
+                        <span className="feedback-history-title">{monthLabel(fb.month, fb.year)}</span>
                         <StatusBadge status={fb.status} />
                       </div>
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                        <span style={{ fontSize: 11, color: C.textMuted }}>
+                      <div className="feedback-history-meta-row">
+                        <span className="feedback-history-date">
                           {new Date(fb.created_at).toLocaleDateString("pt-BR")}
                         </span>
                         <button
                           onClick={(e) => { e.stopPropagation(); setConfirmDelete(fb.id); }}
-                          style={{ background: "none", border: "none", color: C.textMuted, fontSize: 11, cursor: "pointer", fontFamily: "inherit" }}>
+                          className="feedback-delete-button">
                           Excluir
                         </button>
                       </div>
@@ -430,17 +405,14 @@ export default function FeedbackPage() {
 
       {/* Delete confirm modal */}
       {confirmDelete && (
-        <div style={{
-          position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)",
-          display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100,
-        }} onClick={() => setConfirmDelete(null)}>
-          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: "1.5rem", maxWidth: 360 }}
+        <div className="cb-modal-overlay" onClick={() => setConfirmDelete(null)}>
+          <div className="cb-modal feedback-delete-modal"
             onClick={(e) => e.stopPropagation()}>
-            <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 8 }}>Excluir análise?</div>
-            <div style={{ fontSize: 13, color: C.textMuted, marginBottom: "1.25rem" }}>Esta ação não pode ser desfeita.</div>
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-              <button onClick={() => setConfirmDelete(null)} style={{ padding: "8px 16px", borderRadius: 8, border: `1px solid ${C.border}`, background: "transparent", color: C.textMuted, fontSize: 12, cursor: "pointer", fontFamily: "inherit" }}>Cancelar</button>
-              <button onClick={() => { deleteFeedback(confirmDelete); setConfirmDelete(null); }} style={{ padding: "8px 16px", borderRadius: 8, border: "none", background: C.danger, color: "#fff", fontSize: 12, fontWeight: 600, cursor: "pointer", fontFamily: "inherit" }}>Excluir</button>
+            <div className="feedback-delete-modal__title">Excluir análise?</div>
+            <div className="feedback-delete-modal__copy">Esta ação não pode ser desfeita.</div>
+            <div className="feedback-delete-modal__actions">
+              <button onClick={() => setConfirmDelete(null)} className="cb-button cb-button--secondary cb-button--small">Cancelar</button>
+              <button onClick={() => { deleteFeedback(confirmDelete); setConfirmDelete(null); }} className="cb-button cb-button--danger-solid cb-button--small">Excluir</button>
             </div>
           </div>
         </div>

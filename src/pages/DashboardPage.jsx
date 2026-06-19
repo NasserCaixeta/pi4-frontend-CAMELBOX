@@ -54,17 +54,14 @@ const formatPeriod = (month, year) => {
 };
 
 // ─── Base UI ─────────────────────────────────────────────────────────────────
-const Card = ({ children, style }) => (
-  <div style={{
-    background: C.card, border: `1px solid ${C.border}`,
-    borderRadius: 10, padding: "1.25rem", ...style,
-  }}>
+const Card = ({ children, className = "", style }) => (
+  <div className={`cb-card${className ? ` ${className}` : ""}`} style={style}>
     {children}
   </div>
 );
 
 const SectionTitle = ({ children }) => (
-  <div style={{ fontSize: 14, fontWeight: 600, color: C.text, marginBottom: "0.875rem" }}>
+  <div className="cb-section-title">
     {children}
   </div>
 );
@@ -75,19 +72,17 @@ function SummaryCard({ label, value, change, positive }) {
   const up = hasChange && parseFloat(change) >= 0;
   const isGood = hasChange && (positive ? up : !up);
   return (
-    <Card style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ fontSize: 11, fontWeight: 500, color: C.textMuted, marginBottom: "0.5rem" }}>
+    <Card>
+      <div className="dashboard-summary-label">
         {label}
       </div>
-      <div style={{ fontSize: 26, fontWeight: 700, color: C.text,
-        letterSpacing: "-0.5px", marginBottom: "0.4rem" }}>
+      <div className="dashboard-summary-value">
         {fmt(value)}
       </div>
       {hasChange && (
-        <div style={{ display: "flex", alignItems: "center", gap: 4,
-          fontSize: 12, color: isGood ? C.success : C.danger }}>
+        <div className={`dashboard-summary-change ${isGood ? "is-good" : "is-bad"}`}>
           <span>{up ? "+" : "−"}{Math.abs(change)}%</span>
-          <span style={{ color: C.textMuted }}>vs mês anterior</span>
+          <span className="dashboard-summary-change-context">vs mês anterior</span>
         </div>
       )}
     </Card>
@@ -99,8 +94,7 @@ const CustomDonutTooltip = ({ active, payload }) => {
   if (!active || !payload?.length) return null;
   const { name, value } = payload[0];
   return (
-    <div style={{ background: C.surface, border: `1px solid ${C.border}`,
-      borderRadius: 8, padding: "6px 10px", fontSize: 12, color: C.text }}>
+    <div className="dashboard-tooltip">
       <strong>{name}</strong>: {fmt(value)}
     </div>
   );
@@ -111,24 +105,16 @@ function DonutChart({ data }) {
   const total = data.reduce((s, d) => s + d.value, 0);
 
   const legend = (
-    <div style={{
-      display: "grid",
-      gridTemplateColumns: isMobile ? "1fr 1fr" : "1fr",
-      gap: isMobile ? "6px 20px" : 8,
-      width: "100%",
-    }}>
+    <div className={`dashboard-donut-legend${isMobile ? " is-mobile" : ""}`}>
       {data.map((d) => (
-        <div key={d.name} style={{ display: "flex", alignItems: "center",
-          justifyContent: "space-between", gap: 6 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-            <div style={{ width: 8, height: 8, borderRadius: "50%",
-              background: getCatColor(d.name), flexShrink: 0 }} />
-            <span style={{ fontSize: 12, color: C.textMuted,
-              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <div key={d.name} className="dashboard-donut-legend-item">
+          <div className="dashboard-donut-label">
+            <div className="dashboard-donut-dot" style={{ background: getCatColor(d.name) }} />
+            <span className="dashboard-donut-name">
               {d.name}
             </span>
           </div>
-          <span style={{ fontSize: 12, color: C.text, fontWeight: 500, flexShrink: 0 }}>
+          <span className="dashboard-donut-percent">
             {total > 0 ? ((d.value / total) * 100).toFixed(0) : 0}%
           </span>
         </div>
@@ -138,7 +124,7 @@ function DonutChart({ data }) {
 
   const size = 200;
   const pie = (
-    <div style={{ width: size, height: size, flexShrink: 0 }}>
+    <div className="dashboard-donut-chart" style={{ width: size, height: size }}>
       <PieChart width={size} height={size}>
         <Pie data={data} cx="50%" cy="50%"
           innerRadius={60} outerRadius={90}
@@ -153,9 +139,9 @@ function DonutChart({ data }) {
   );
 
   return (
-    <Card style={{ flex: 1, minWidth: 0 }}>
+    <Card>
       <SectionTitle>Despesas por Categoria</SectionTitle>
-      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1.25rem" }}>
+      <div className="dashboard-donut">
         {pie}
         {legend}
       </div>
@@ -167,21 +153,23 @@ function DonutChart({ data }) {
 function HorizontalBarChart({ data }) {
   const max = Math.max(...data.map((d) => d.value), 1);
   return (
-    <Card style={{ flex: 1, minWidth: 0 }}>
+    <Card>
       <SectionTitle>Top Categorias de Gasto</SectionTitle>
-      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      <div className="dashboard-bar-list">
         {data.map((d) => (
-          <div key={d.name}>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-              <span style={{ fontSize: 12, color: C.textMuted }}>{d.name}</span>
-              <span style={{ fontSize: 12, color: C.text, fontWeight: 500 }}>{fmt(d.value)}</span>
+          <div key={d.name} className="dashboard-bar-row">
+            <div className="dashboard-bar-meta">
+              <span className="dashboard-bar-name">{d.name}</span>
+              <span className="dashboard-bar-value">{fmt(d.value)}</span>
             </div>
-            <div style={{ background: C.border, borderRadius: 4, height: 6 }}>
-              <div style={{
-                width: `${(d.value / max) * 100}%`, height: "100%",
-                background: getCatColor(d.name), borderRadius: 4,
-                transition: "width 0.5s ease",
-              }} />
+            <div className="dashboard-bar-track">
+              <div
+                className="dashboard-bar-fill"
+                style={{
+                  width: `${(d.value / max) * 100}%`,
+                  background: getCatColor(d.name),
+                }}
+              />
             </div>
           </div>
         ))}
@@ -197,7 +185,7 @@ function TransactionsTable({ transactions }) {
   const [valueSearch, setValueSearch] = useState("");
   const [sortValue, setSortValue] = useState(null); // null | "asc" | "desc"
 
-  const allItems = transactions?.items || [];
+  const allItems = useMemo(() => transactions?.items || [], [transactions]);
 
   const uniqueCategories = useMemo(() => {
     const seen = new Map();
@@ -259,7 +247,7 @@ function TransactionsTable({ transactions }) {
     return (
       <Card>
         <SectionTitle>Transações Recentes</SectionTitle>
-        <div style={{ fontSize: 13, color: C.textMuted, padding: "1rem 0" }}>
+        <div className="dashboard-empty-message">
           Nenhuma transação encontrada neste período.
         </div>
       </Card>
@@ -272,39 +260,36 @@ function TransactionsTable({ transactions }) {
 
       {/* ── Category pills ── */}
       {uniqueCategories.length > 0 && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: "0.75rem" }}>
+        <div className="cb-pill-row">
           {uniqueCategories.map((name) => {
             const color = getCatColor(name);
             const active = activeCats.has(name);
             return (
               <button
                 key={name}
+                type="button"
+                className="cb-pill"
+                aria-pressed={active}
                 onClick={() => toggleCat(name)}
-                style={{
-                  display: "inline-flex", alignItems: "center", gap: 5,
-                  fontSize: 11, fontWeight: 500, padding: "4px 10px", borderRadius: 20,
-                  border: `1px solid ${active ? color : C.border}`,
-                  background: active ? `${color}28` : "transparent",
-                  color: active ? color : C.textMuted,
-                  cursor: "pointer", transition: "all 0.15s",
-                }}
+                style={active ? {
+                  borderColor: color,
+                  background: `${color}28`,
+                  color,
+                } : undefined}
               >
-                <span style={{
-                  width: 6, height: 6, borderRadius: "50%",
-                  background: active ? color : C.textDim, flexShrink: 0,
-                }} />
+                <span
+                  className="dashboard-category-dot"
+                  style={active ? { background: color } : undefined}
+                />
                 {name}
               </button>
             );
           })}
           {hasActiveFilters && (
             <button
+              type="button"
+              className="cb-pill"
               onClick={clearFilters}
-              style={{
-                fontSize: 11, fontWeight: 500, padding: "4px 10px", borderRadius: 20,
-                border: `1px solid ${C.border}`, background: "transparent",
-                color: C.textMuted, cursor: "pointer",
-              }}
             >
               × Limpar
             </button>
@@ -313,57 +298,59 @@ function TransactionsTable({ transactions }) {
       )}
 
       {/* ── Value search ── */}
-      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: "0.75rem" }}>
-        <div style={{ position: "relative", flex: 1, maxWidth: 180 }}>
-          <span style={{
-            position: "absolute", left: 9, top: "50%", transform: "translateY(-50%)",
-            fontSize: 11, color: C.textMuted, pointerEvents: "none",
-          }}>R$</span>
+      <div className="dashboard-filter-row">
+        <div className="dashboard-value-search">
+          <label className="cb-sr-only" htmlFor="dashboard-value-search">
+            Buscar transações por valor
+          </label>
+          <span className="dashboard-value-prefix">R$</span>
           <input
+            id="dashboard-value-search"
+            className={`dashboard-value-input${valueSearch ? " is-active" : ""}`}
             type="text"
             inputMode="decimal"
             placeholder="buscar por valor..."
             value={valueSearch}
             onChange={(e) => setValueSearch(e.target.value)}
-            style={{
-              width: "100%", paddingLeft: 26, paddingRight: 10,
-              paddingTop: 5, paddingBottom: 5,
-              background: C.surface, border: `1px solid ${valueSearch ? C.amber : C.border}`,
-              borderRadius: 8, color: C.text, fontSize: 12,
-              outline: "none", boxSizing: "border-box",
-            }}
           />
         </div>
-        <div style={{ fontSize: 11, color: C.textMuted, marginLeft: "auto" }}>
-          Exibindo <strong style={{ color: C.text }}>{filtered.length}</strong> de{" "}
-          <strong style={{ color: C.text }}>{allItems.length}</strong>
+        <div className="dashboard-result-count">
+          Exibindo <strong>{filtered.length}</strong> de{" "}
+          <strong>{allItems.length}</strong>
         </div>
       </div>
 
       {/* ── Table ── */}
       {filtered.length === 0 ? (
-        <div style={{ fontSize: 13, color: C.textMuted, padding: "0.75rem 0" }}>
+        <div className="dashboard-empty-message dashboard-empty-message--compact">
           Nenhuma transação corresponde aos filtros aplicados.
         </div>
       ) : (
-        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, tableLayout: "fixed" }}>
+        <table className="cb-table">
           <colgroup>
             <col />
-            <col style={{ width: 92 }} />
-            <col style={{ width: 72 }} />
-            <col style={{ width: 92 }} />
+            <col className="dashboard-table-col-category" />
+            <col className="dashboard-table-col-date" />
+            <col className="dashboard-table-col-amount" />
           </colgroup>
           <thead>
-            <tr style={{ borderBottom: `1px solid ${C.border}` }}>
-              <th style={{ textAlign: "left", padding: "0 8px 10px", color: C.textMuted, fontWeight: 500, fontSize: 11 }}>Descrição</th>
-              <th style={{ textAlign: "left", padding: "0 8px 10px", color: C.textMuted, fontWeight: 500, fontSize: 11 }}>Categoria</th>
-              <th style={{ textAlign: "left", padding: "0 8px 10px", color: C.textMuted, fontWeight: 500, fontSize: 11 }}>Data</th>
+            <tr>
+              <th scope="col">Descrição</th>
+              <th scope="col">Categoria</th>
+              <th scope="col">Data</th>
               <th
-                style={{ textAlign: "right", padding: "0 8px 10px", color: sortValue ? C.amber : C.textMuted, fontWeight: 500, fontSize: 11, cursor: "pointer", userSelect: "none", whiteSpace: "nowrap" }}
-                onClick={cycleSortValue}
-                title="Ordenar por valor"
+                scope="col"
+                aria-sort={sortValue === "asc" ? "ascending" : sortValue === "desc" ? "descending" : "none"}
+                className={`dashboard-table-sort${sortValue ? " is-active" : ""}`}
               >
-                Valor {sortIcon}
+                <button
+                  type="button"
+                  className="dashboard-table-sort-button"
+                  onClick={cycleSortValue}
+                  title="Ordenar por valor"
+                >
+                  Valor {sortIcon}
+                </button>
               </th>
             </tr>
           </thead>
@@ -372,29 +359,25 @@ function TransactionsTable({ transactions }) {
               const catName = t.category?.name || "Sem categoria";
               const formattedDate = new Date(t.date + 'T00:00:00').toLocaleDateString('pt-BR');
               return (
-                <tr key={t.id} style={{ borderBottom: `1px solid ${C.border}` }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = C.surface}
-                  onMouseLeave={(e) => e.currentTarget.style.background = "transparent"}>
-                  <td style={{ padding: "10px 8px", color: C.text, fontWeight: 500,
-                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                <tr key={t.id}>
+                  <td className="dashboard-table-description">
                     {t.description || "—"}
                   </td>
-                  <td style={{ padding: "10px 8px", overflow: "hidden" }}>
-                    <span style={{
-                      display: "inline-flex", alignItems: "center", gap: 5,
-                      fontSize: 11, fontWeight: 500, padding: "3px 8px", borderRadius: 20,
-                      background: `${getCatColor(catName)}20`, color: getCatColor(catName),
-                      overflow: "hidden", maxWidth: "100%",
-                    }}>
-                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{catName}</span>
+                  <td className="dashboard-table-category">
+                    <span
+                      className="dashboard-category-chip"
+                      style={{
+                        background: `${getCatColor(catName)}20`,
+                        color: getCatColor(catName),
+                      }}
+                    >
+                      <span className="dashboard-category-chip__text">{catName}</span>
                     </span>
                   </td>
-                  <td style={{ padding: "10px 8px", color: C.textMuted, whiteSpace: "nowrap" }}>
+                  <td className="dashboard-table-date">
                     {formattedDate}
                   </td>
-                  <td style={{ padding: "10px 8px", fontWeight: 600,
-                    color: t.type === "credit" ? C.success : C.danger,
-                    textAlign: "right", whiteSpace: "nowrap" }}>
+                  <td className={`dashboard-table-amount ${t.type === "credit" ? "is-credit" : "is-debit"}`}>
                     {t.type === "credit" ? "+" : "-"}{fmt(t.amount)}
                   </td>
                 </tr>
@@ -414,28 +397,23 @@ function PeriodComparison({ categories }) {
   return (
     <Card>
       <SectionTitle>Comparativo com Período Anterior</SectionTitle>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))", gap: 10 }}>
+      <div className="dashboard-comparison-grid">
         {categories.categories.map((item) => {
           const catName = item.category?.name || "Sem categoria";
           const change = item.comparison?.change_percent;
           const hasChange = change !== null && change !== undefined;
           const isGood = hasChange && change < 0;
           return (
-            <div key={catName} style={{
-              background: C.surface, borderRadius: 10,
-              padding: "10px 12px", border: `1px solid ${C.border}`,
-            }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                <div style={{ width: 8, height: 8, borderRadius: "50%",
-                  background: getCatColor(catName), flexShrink: 0 }} />
-                <span style={{ fontSize: 11, color: C.textMuted }}>{catName}</span>
+            <div key={catName} className="dashboard-comparison-card">
+              <div className="dashboard-comparison-head">
+                <div className="dashboard-comparison-dot" style={{ background: getCatColor(catName) }} />
+                <span className="dashboard-comparison-name">{catName}</span>
               </div>
-              <div style={{ fontSize: 14, fontWeight: 600, color: C.text }}>
+              <div className="dashboard-comparison-total">
                 {fmt(item.total)}
               </div>
               {hasChange && (
-                <div style={{ fontSize: 11, marginTop: 2,
-                  color: isGood ? C.success : C.danger }}>
+                <div className={`dashboard-comparison-change ${isGood ? "is-good" : "is-bad"}`}>
                   {change > 0 ? "+" : "−"}{Math.abs(change)}%
                 </div>
               )}
@@ -449,15 +427,13 @@ function PeriodComparison({ categories }) {
 
 // ─── Main Dashboard ──────────────────────────────────────────────────────────
 export default function DashboardPage({ onShowPlans: onShowPlansProp }) {
-  const isMobile = useIsMobile();
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [selectedYear, setSelectedYear] = useState(null);
   const [selectedRange, setSelectedRange] = useState(null); // { startDate, endDate }
-  const [periodLabel, setPeriodLabel] = useState("Selecionar período");
 
   const {
     summary, categories, transactions, statements,
-    availableMonths, loading, error, refresh,
+    availableMonths, loading, refresh,
   } = useDashboard(
     selectedRange
       ? { startDate: selectedRange.startDate, endDate: selectedRange.endDate }
@@ -466,23 +442,26 @@ export default function DashboardPage({ onShowPlans: onShowPlansProp }) {
 
   // Auto-select most recent month when availableMonths loads and there is no range selected
   useEffect(() => {
-    if (availableMonths.length === 0) {
-      setSelectedMonth(null);
-      setSelectedYear(null);
-      setSelectedRange(null);
-      return;
-    }
+    const syncSelection = window.setTimeout(() => {
+      if (availableMonths.length === 0) {
+        setSelectedMonth(null);
+        setSelectedYear(null);
+        setSelectedRange(null);
+        return;
+      }
 
-    const selectedExists = selectedRange
-      ? true
-      : availableMonths.some((p) => p.month === selectedMonth && p.year === selectedYear);
+      const selectedExists = selectedRange
+        ? true
+        : availableMonths.some((p) => p.month === selectedMonth && p.year === selectedYear);
 
-    if (!selectedRange && (selectedMonth === null || !selectedExists)) {
-      const latest = availableMonths[availableMonths.length - 1];
-      setSelectedMonth(latest.month);
-      setSelectedYear(latest.year);
-      setPeriodLabel(formatPeriod(latest.month, latest.year));
-    }
+      if (!selectedRange && (selectedMonth === null || !selectedExists)) {
+        const latest = availableMonths[availableMonths.length - 1];
+        setSelectedMonth(latest.month);
+        setSelectedYear(latest.year);
+      }
+    }, 0);
+
+    return () => window.clearTimeout(syncSelection);
   }, [availableMonths, selectedMonth, selectedYear, selectedRange]);
 
   const handleUploadComplete = () => {
@@ -508,12 +487,8 @@ export default function DashboardPage({ onShowPlans: onShowPlansProp }) {
   // ─── Loading state ───
   if (loading && !statements) {
     return (
-      <div style={{
-        flex: 1, display: "flex",
-        alignItems: "center", justifyContent: "center",
-        fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif", color: C.text,
-      }}>
-        <div style={{ fontSize: 16, color: C.textMuted }}>Carregando...</div>
+      <div className="dashboard-loading">
+        <div className="dashboard-loading__text">Carregando...</div>
       </div>
     );
   }
@@ -521,10 +496,7 @@ export default function DashboardPage({ onShowPlans: onShowPlansProp }) {
   // ─── Empty state ───
   if (!hasData) {
     return (
-      <div style={{
-        padding: isMobile ? "1rem" : "1.5rem 2rem",
-        fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif", color: C.text,
-      }}>
+      <div className="dashboard-page">
         <UploadCard onUploadComplete={handleUploadComplete} onShowPlans={() => onShowPlansProp?.()} />
       </div>
     );
@@ -538,23 +510,17 @@ export default function DashboardPage({ onShowPlans: onShowPlansProp }) {
 
   const hBarData = [...donutData].sort((a, b) => b.value - a.value);
 
-  const p = isMobile ? "1rem" : "1.5rem 2rem";
-
   return (
-    <div style={{
-      padding: p,
-      fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif", color: C.text,
-    }}>
+    <div className="dashboard-page">
       {/* Top bar: period selector */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between",
-        marginBottom: "1.25rem", flexWrap: "wrap", gap: "0.75rem" }}>
-        <h1 style={{ fontSize: 20, fontWeight: 700, margin: 0, letterSpacing: "-0.3px" }}>Dashboard</h1>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 12, color: C.textMuted }}>Período:</span>
+      <div className="dashboard-topbar">
+        <h1 className="dashboard-title">Dashboard</h1>
+        <div className="dashboard-period-control">
+          <span className="dashboard-period-label">Período:</span>
           <PeriodPicker
             availableMonths={availableMonths}
             value={selectedRange ? selectedRange : (selectedMonth && selectedYear ? { month: selectedMonth, year: selectedYear } : null)}
-            onChange={(val, label) => {
+            onChange={(val) => {
               if (val.startDate && val.endDate) {
                 setSelectedRange(val);
                 setSelectedMonth(null);
@@ -564,7 +530,6 @@ export default function DashboardPage({ onShowPlans: onShowPlansProp }) {
                 setSelectedYear(val.year);
                 setSelectedRange(null);
               }
-              setPeriodLabel(label || "Selecionar período");
             }}
           />
         </div>
@@ -580,7 +545,7 @@ export default function DashboardPage({ onShowPlans: onShowPlansProp }) {
       />
 
       {/* Summary Cards */}
-      <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: "0.75rem", marginBottom: "1.25rem", flexWrap: "wrap" }}>
+      <div className="dashboard-summary">
         <SummaryCard
           label="Total de Receitas"
           value={summary?.total_income || 0}
@@ -602,17 +567,17 @@ export default function DashboardPage({ onShowPlans: onShowPlansProp }) {
       </div>
 
       {/* Charts row */}
-      <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: "1rem", marginBottom: "1.25rem" }}>
+      <div className="dashboard-chart-row">
         <DonutChart data={donutData} />
         <HorizontalBarChart data={hBarData} />
       </div>
 
       {/* Transactions + Comparison */}
-      <div style={{ display: "flex", flexDirection: isMobile ? "column" : "row", gap: "1rem", flexWrap: "wrap", marginBottom: "1.25rem" }}>
-        <div style={{ flex: 2, minWidth: 0 }}>
+      <div className="dashboard-content-row">
+        <div className="dashboard-transactions">
           <TransactionsTable transactions={transactions} />
         </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="dashboard-comparison">
           <PeriodComparison categories={categories} />
         </div>
       </div>

@@ -1,18 +1,4 @@
-import { useState } from 'react';
-
-const C = {
-  bg: "#0F0D08",
-  surface: "#1C1810",
-  card: "#231F14",
-  border: "#3A3120",
-  amber: "#D4A843",
-  amberLight: "#E8C265",
-  amberGlow: "rgba(212,168,67,0.1)",
-  text: "#F5ECD7",
-  textMuted: "#8A7A5A",
-  success: "#5A9A6A",
-  danger: "#C0503A",
-};
+import { useEffect, useRef, useState } from 'react';
 
 const plans = [
   {
@@ -45,8 +31,30 @@ const plans = [
 
 export default function PlansModal({ open, onClose, onCheckout, currentPlan }) {
   const [loadingPlan, setLoadingPlan] = useState(null);
+  const modalRef = useRef(null);
+  const previousFocusRef = useRef(null);
 
-  if (!open) return null;
+  useEffect(() => {
+    if (!open) return undefined;
+
+    previousFocusRef.current = document.activeElement;
+
+    requestAnimationFrame(() => {
+      const modal = modalRef.current;
+      if (!modal) return;
+      const firstButton = modal.querySelector('button:not(:disabled)');
+      const closeButton = modal.querySelector('.cb-modal__close button');
+      (firstButton || closeButton || modal).focus();
+    });
+
+    return () => {
+      const previousFocus = previousFocusRef.current;
+      if (previousFocus && previousFocus.isConnected && typeof previousFocus.focus === 'function') {
+        previousFocus.focus();
+      }
+      previousFocusRef.current = null;
+    };
+  }, [open]);
 
   const handleCheckout = async (planId) => {
     setLoadingPlan(planId);
@@ -57,70 +65,95 @@ export default function PlansModal({ open, onClose, onCheckout, currentPlan }) {
     }
   };
 
+  const handleKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      e.stopPropagation();
+      onClose();
+      return;
+    }
+
+    if (e.key !== 'Tab') return;
+
+    const modal = modalRef.current;
+    if (!modal) return;
+
+    const focusable = Array.from(
+      modal.querySelectorAll('button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])')
+    ).filter((element) => !element.hasAttribute('disabled') && element.getAttribute('aria-hidden') !== 'true');
+
+    if (!focusable.length) {
+      e.preventDefault();
+      modal.focus();
+      return;
+    }
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
+
+  if (!open) return null;
+
   return (
     <div
       onClick={onClose}
-      style={{
-        position: "fixed", inset: 0, zIndex: 9999,
-        background: "rgba(0,0,0,0.7)", backdropFilter: "blur(4px)",
-        display: "flex", alignItems: "center", justifyContent: "center",
-        padding: "1rem",
-      }}
+      className="cb-modal-overlay"
     >
       <div
+        ref={modalRef}
         onClick={(e) => e.stopPropagation()}
-        style={{
-          background: C.surface, border: `1px solid ${C.border}`,
-          borderRadius: 20, padding: "2rem", maxWidth: 640, width: "100%",
-        }}
+        onKeyDown={handleKeyDown}
+        className="cb-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="plans-modal-title"
+        aria-describedby="plans-modal-description"
+        tabIndex={-1}
       >
-        <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
-          <div style={{ fontSize: 22, fontWeight: 700, color: C.text }}>
+        <div className="cb-modal__header">
+          <div id="plans-modal-title" className="cb-modal__title">
             Escolha seu plano
           </div>
-          <div style={{ fontSize: 13, color: C.textMuted, marginTop: 4 }}>
+          <div id="plans-modal-description" className="cb-modal__subtitle">
             Desbloqueie mais análises e aproveite todos os recursos
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", justifyContent: "center" }}>
+        <div className="cb-plan-grid">
           {plans.map((plan) => {
             const isCurrentPlan = currentPlan === plan.id;
             return (
               <div
                 key={plan.id}
-                style={{
-                  background: C.card,
-                  border: `2px solid ${plan.highlight ? C.amber : C.border}`,
-                  borderRadius: 16, padding: "1.5rem", flex: 1, minWidth: 240,
-                  position: "relative",
-                }}
+                className={`cb-plan-card${plan.highlight ? " is-highlighted" : ""}`}
               >
                 {plan.highlight && (
-                  <div style={{
-                    position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)",
-                    background: C.amber, color: C.bg, fontSize: 11, fontWeight: 700,
-                    padding: "3px 12px", borderRadius: 20, letterSpacing: "0.5px",
-                    textTransform: "uppercase",
-                  }}>
+                  <div className="cb-plan-card__badge">
                     Popular
                   </div>
                 )}
 
-                <div style={{ fontSize: 18, fontWeight: 700, color: C.text, marginBottom: 4 }}>
+                <div className="cb-plan-card__title">
                   {plan.name}
                 </div>
 
-                <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: "1rem" }}>
-                  <span style={{ fontSize: 28, fontWeight: 800, color: C.amber }}>{plan.price}</span>
-                  <span style={{ fontSize: 13, color: C.textMuted }}>{plan.period}</span>
+                <div className="cb-plan-card__price">
+                  <span className="cb-plan-card__price-value">{plan.price}</span>
+                  <span className="cb-plan-card__period">{plan.period}</span>
                 </div>
 
-                <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: "1.25rem" }}>
+                <div className="cb-plan-card__features">
                   {plan.features.map((f, i) => (
-                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ color: C.success, fontSize: 14 }}>✓</span>
-                      <span style={{ fontSize: 13, color: C.textMuted }}>{f}</span>
+                    <div key={i} className="cb-plan-card__feature">
+                      <span className="cb-plan-card__check">✓</span>
+                      <span className="cb-plan-card__feature-text">{f}</span>
                     </div>
                   ))}
                 </div>
@@ -128,15 +161,7 @@ export default function PlansModal({ open, onClose, onCheckout, currentPlan }) {
                 <button
                   onClick={() => handleCheckout(plan.id)}
                   disabled={isCurrentPlan || loadingPlan !== null}
-                  style={{
-                    width: "100%", padding: "10px 0", borderRadius: 10,
-                    border: plan.highlight ? "none" : `1px solid ${C.amber}`,
-                    background: plan.highlight ? C.amber : "transparent",
-                    color: plan.highlight ? C.bg : C.amber,
-                    fontSize: 14, fontWeight: 600, cursor: isCurrentPlan ? "default" : "pointer",
-                    fontFamily: "inherit", opacity: isCurrentPlan ? 0.5 : 1,
-                    transition: "all 0.15s",
-                  }}
+                  className={`cb-button cb-plan-card__button ${plan.highlight ? "cb-button--primary" : "cb-button--outline"}${isCurrentPlan ? " is-current" : ""}`}
                 >
                   {loadingPlan === plan.id
                     ? "Redirecionando..."
@@ -149,16 +174,14 @@ export default function PlansModal({ open, onClose, onCheckout, currentPlan }) {
           })}
         </div>
 
-        <button
-          onClick={onClose}
-          style={{
-            display: "block", margin: "1.25rem auto 0", padding: "8px 24px",
-            borderRadius: 8, border: `1px solid ${C.border}`, background: "transparent",
-            color: C.textMuted, fontSize: 13, cursor: "pointer", fontFamily: "inherit",
-          }}
-        >
-          Fechar
-        </button>
+        <div className="cb-modal__close">
+          <button
+            onClick={onClose}
+            className="cb-button cb-button--ghost cb-button--compact"
+          >
+            Fechar
+          </button>
+        </div>
       </div>
     </div>
   );

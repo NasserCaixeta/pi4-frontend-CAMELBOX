@@ -1,17 +1,5 @@
 import { useNavigate } from "react-router-dom";
-
-const C = {
-  bg: "#0F0D08",
-  surface: "#1C1810",
-  card: "#231F14",
-  border: "#3A3120",
-  amber: "#D4A843",
-  text: "#F5ECD7",
-  textMuted: "#8A7A5A",
-  success: "#5A9A6A",
-  blue: "#4A8DB5",
-  purple: "#9B6DB5",
-};
+import useRevealOnScroll from "../hooks/useRevealOnScroll";
 
 const features = [
   {
@@ -77,35 +65,23 @@ const plans = [
   },
 ];
 
-const page = {
-  minHeight: "100vh",
-  background: C.bg,
-  color: C.text,
-  fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif",
-};
-
-const container = {
-  width: "min(1120px, calc(100% - 32px))",
-  margin: "0 auto",
-};
-
 function scrollToSection(id) {
-  document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  document.getElementById(id)?.scrollIntoView({
+    behavior: prefersReducedMotion ? "auto" : "smooth",
+    block: "start",
+  });
 }
 
 function Logo() {
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <div style={{
-        width: 34, height: 34, background: C.amber, borderRadius: 8,
-        display: "flex", alignItems: "center", justifyContent: "center",
-        fontFamily: "Georgia, serif", fontSize: 20, fontWeight: 700, color: C.bg, lineHeight: 1,
-      }}>
+    <div className="landing-logo">
+      <div className="landing-logo__mark">
         C
       </div>
       <div>
-        <div style={{ fontSize: 15, fontWeight: 700, color: C.text, letterSpacing: "-0.3px" }}>CamelBox</div>
-        <div style={{ fontSize: 11, color: C.textMuted }}>Análise Financeira</div>
+        <div className="landing-logo__name">CamelBox</div>
+        <div className="landing-logo__sub">Análise Financeira</div>
       </div>
     </div>
   );
@@ -115,19 +91,9 @@ function CTAButton({ children = "Criar conta grátis", secondary = false }) {
   const navigate = useNavigate();
   return (
     <button
+      type="button"
       onClick={() => navigate("/auth?mode=register")}
-      style={{
-        padding: secondary ? "10px 15px" : "11px 16px",
-        borderRadius: 9,
-        border: secondary ? `1px solid ${C.amber}` : "none",
-        background: secondary ? "transparent" : C.amber,
-        color: secondary ? C.amber : C.bg,
-        fontSize: 14,
-        fontWeight: 700,
-        cursor: "pointer",
-        fontFamily: "inherit",
-        whiteSpace: "nowrap",
-      }}
+      className={`cb-button ${secondary ? "cb-button--outline" : "cb-button--primary"}`}
     >
       {children}
     </button>
@@ -136,14 +102,10 @@ function CTAButton({ children = "Criar conta grátis", secondary = false }) {
 
 function Header() {
   return (
-    <header className="landing-header" style={{
-      position: "sticky", top: 0, zIndex: 10,
-      background: "rgba(15,13,8,0.92)", backdropFilter: "blur(10px)",
-      borderBottom: `1px solid ${C.border}`,
-    }}>
-      <div style={{ ...container, display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 0", gap: 16 }}>
+    <header className="landing-header">
+      <div className="cb-container landing-header__inner">
         <Logo />
-        <nav style={{ display: "flex", alignItems: "center", gap: 18 }}>
+        <nav className="landing-nav">
           {[
             ["Produto", "produto"],
             ["Como funciona", "como-funciona"],
@@ -153,18 +115,8 @@ function Header() {
             <button
               key={id}
               type="button"
-              className="landing-nav-link"
+              className="landing-nav__link"
               onClick={() => scrollToSection(id)}
-              style={{
-                background: "none",
-                border: "none",
-                padding: 0,
-                color: C.textMuted,
-                fontSize: 13,
-                fontWeight: 500,
-                fontFamily: "inherit",
-                cursor: "pointer",
-              }}
             >
               {label}
             </button>
@@ -178,45 +130,39 @@ function Header() {
 
 function HeroPreview() {
   return (
-    <div style={{
-      background: C.card, border: `1px solid ${C.border}`, borderRadius: 14,
-      padding: 16, boxShadow: "0 24px 80px rgba(0,0,0,0.22)",
-    }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-        <strong style={{ fontSize: 15 }}>Dashboard</strong>
-        <span style={{ fontSize: 11, color: C.textMuted }}>Junho 2026</span>
+    <div className="cb-card cb-reveal cb-animate-delay-2 landing-preview">
+      <div className="landing-preview__top">
+        <strong>Dashboard</strong>
+        <span className="landing-preview__date">Junho 2026</span>
       </div>
-      <div className="landing-preview-summary" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 8, marginBottom: 14 }}>
+      <div className="landing-preview__summary">
         {[
-          ["Receitas", "R$ 5.000", C.text],
-          ["Despesas", "R$ 3.248", C.text],
-          ["Saldo", "R$ 1.752", C.success],
-        ].map(([label, value, color]) => (
-          <div key={label} style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 9, padding: 10, minWidth: 0 }}>
-            <div style={{ fontSize: 10, color: C.textMuted, marginBottom: 4 }}>{label}</div>
-            <b style={{ color, fontSize: 15, whiteSpace: "nowrap" }}>{value}</b>
+          ["Receitas", "R$ 5.000", false],
+          ["Despesas", "R$ 3.248", false],
+          ["Saldo", "R$ 1.752", true],
+        ].map(([label, value, success]) => (
+          <div key={label} className="landing-preview__metric">
+            <div className="landing-preview__metric-label">{label}</div>
+            <b className={`landing-preview__metric-value${success ? " landing-preview__metric-value--success" : ""}`}>{value}</b>
           </div>
         ))}
       </div>
-      <div className="landing-preview-grid" style={{ display: "grid", gridTemplateColumns: "0.9fr 1.1fr", gap: 12 }}>
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>
-          <div style={{
-            width: 124, height: 124, borderRadius: "50%", margin: "6px auto",
-            background: `conic-gradient(${C.amber} 0 34%, ${C.success} 34% 52%, ${C.blue} 52% 70%, ${C.purple} 70% 84%, #6A7A6A 84%)`,
-          }} />
+      <div className="landing-preview__grid">
+        <div className="landing-preview__panel">
+          <div className="landing-preview__donut" />
         </div>
-        <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 12 }}>
+        <div className="landing-preview__panel">
           {[
-            ["Alimentação", "R$ 850", "82%", C.amber],
-            ["Transporte", "R$ 420", "54%", C.blue],
+            ["Alimentação", "R$ 850", "82%", "var(--cb-color-amber)"],
+            ["Transporte", "R$ 420", "54%", "var(--cb-color-blue)"],
             ["Assinaturas", "R$ 189", "32%", "#8B5CF6"],
           ].map(([label, value, width, color]) => (
-            <div key={label} style={{ marginBottom: 11 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: C.textMuted, marginBottom: 6, gap: 8 }}>
+            <div key={label} className="landing-preview__bar-row">
+              <div className="landing-preview__bar-label">
                 <span>{label}</span><span>{value}</span>
               </div>
-              <div style={{ height: 6, background: C.border, borderRadius: 4 }}>
-                <div style={{ height: "100%", width, background: color, borderRadius: 4 }} />
+              <div className="landing-preview__bar-track">
+                <div className="landing-preview__bar-fill" style={{ width, background: color }} />
               </div>
             </div>
           ))}
@@ -228,32 +174,28 @@ function HeroPreview() {
 
 function Hero() {
   return (
-    <section className="landing-hero" style={{ ...container, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32, alignItems: "center", padding: "64px 0 42px" }}>
-      <div>
-        <div style={{ fontSize: 11, color: C.amber, textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.6px", marginBottom: 12 }}>
+    <section className="cb-container landing-hero">
+      <div className="cb-reveal">
+        <div className="landing-eyebrow">
           Análise financeira sem planilha
         </div>
-        <h1 style={{ fontSize: 54, lineHeight: 1.02, fontWeight: 800, margin: "0 0 16px", letterSpacing: 0 }}>
+        <h1 className="landing-hero__title">
           Entenda seus gastos sem planilhas.
         </h1>
-        <p style={{ fontSize: 16, lineHeight: 1.65, color: C.textMuted, margin: "0 0 22px", maxWidth: 520 }}>
+        <p className="landing-hero__text">
           Envie seu extrato ou fatura em PDF e o CamelBox organiza transações, categorias e sinais do mês em um dashboard simples de ler.
         </p>
-        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
+        <div className="landing-hero__actions">
           <CTAButton />
           <button
             type="button"
             onClick={() => scrollToSection("como-funciona")}
-            style={{
-            padding: "10px 15px", borderRadius: 9, border: `1px solid ${C.border}`,
-            background: "transparent", color: C.amber, fontSize: 14, fontWeight: 700,
-            fontFamily: "inherit", cursor: "pointer",
-          }}
+            className="cb-button cb-button--outline"
           >
             Ver como funciona
           </button>
         </div>
-        <div style={{ marginTop: 14, fontSize: 12, color: C.textMuted }}>
+        <div className="landing-hero__note">
           Comece com 3 análises grátis.
         </div>
       </div>
@@ -264,136 +206,108 @@ function Hero() {
 
 function SectionHeading({ eyebrow, title, text }) {
   return (
-    <div style={{ marginBottom: 18 }}>
-      <div style={{ fontSize: 11, color: C.amber, textTransform: "uppercase", fontWeight: 700, letterSpacing: "0.6px", marginBottom: 8 }}>
+    <div className="landing-section-heading cb-reveal">
+      <div className="landing-eyebrow">
         {eyebrow}
       </div>
-      <h2 style={{ fontSize: 28, lineHeight: 1.15, margin: "0 0 8px", letterSpacing: 0 }}>{title}</h2>
-      {text && <p style={{ fontSize: 14, lineHeight: 1.6, color: C.textMuted, margin: 0, maxWidth: 620 }}>{text}</p>}
+      <h2>{title}</h2>
+      {text && <p>{text}</p>}
     </div>
   );
 }
 
 function FeatureCard({ title, text }) {
   return (
-    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: "1.1rem" }}>
-      <div style={{ fontSize: 14, fontWeight: 700, color: C.text, marginBottom: 8 }}>{title}</div>
-      <p style={{ fontSize: 13, lineHeight: 1.6, color: C.textMuted, margin: 0 }}>{text}</p>
+    <div className="cb-card cb-reveal landing-feature-card">
+      <h3 className="landing-feature-card__title">{title}</h3>
+      <p>{text}</p>
     </div>
   );
 }
 
 function StepCard({ number, title, text }) {
   return (
-    <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 10, padding: "1.25rem" }}>
-      <div style={{ color: C.amber, fontSize: 12, fontWeight: 700, marginBottom: 14 }}>{number}</div>
-      <div style={{ fontSize: 16, fontWeight: 700, color: C.text, marginBottom: 8 }}>{title}</div>
-      <p style={{ fontSize: 13, lineHeight: 1.6, color: C.textMuted, margin: 0 }}>{text}</p>
+    <div className="cb-card cb-reveal landing-step-card">
+      <div className="landing-step-card__number">{number}</div>
+      <h3 className="landing-step-card__title">{title}</h3>
+      <p>{text}</p>
     </div>
   );
 }
 
 function PricingCard({ plan }) {
   return (
-    <div style={{
-      background: C.card,
-      border: `2px solid ${plan.highlight ? C.amber : C.border}`,
-      borderRadius: 14,
-      padding: "1.35rem",
-      position: "relative",
-    }}>
+    <div className={`cb-card cb-reveal landing-pricing-card${plan.highlight ? " landing-pricing-card--highlight" : ""}`}>
       {plan.highlight && (
-        <div style={{
-          position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)",
-          background: C.amber, color: C.bg, fontSize: 11, fontWeight: 800,
-          padding: "3px 12px", borderRadius: 20, textTransform: "uppercase",
-        }}>
+        <div className="landing-pricing-card__badge">
           Popular
         </div>
       )}
-      <div style={{ fontSize: 18, fontWeight: 800, marginBottom: 6 }}>{plan.name}</div>
-      <p style={{ fontSize: 13, lineHeight: 1.5, color: C.textMuted, minHeight: 40, margin: "0 0 14px" }}>{plan.description}</p>
-      <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 16 }}>
-        <span style={{ fontSize: 30, fontWeight: 800, color: C.amber }}>{plan.price}</span>
-        {plan.period && <span style={{ fontSize: 13, color: C.textMuted }}>{plan.period}</span>}
+      <h3 className="landing-pricing-card__title">{plan.name}</h3>
+      <p className="landing-pricing-card__description">{plan.description}</p>
+      <div className="landing-pricing-card__price">
+        <span>{plan.price}</span>
+        {plan.period && <small>{plan.period}</small>}
       </div>
-      <div style={{ display: "flex", flexDirection: "column", gap: 9, marginBottom: 18 }}>
+      <ul className="landing-pricing-card__features">
         {plan.features.map((feature) => (
-          <div key={feature} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, color: C.textMuted }}>
-            <span style={{ color: C.success }}>✓</span>
+          <li key={feature} className="landing-pricing-card__feature">
+            <span aria-hidden="true">✓</span>
             <span>{feature}</span>
-          </div>
+          </li>
         ))}
-      </div>
+      </ul>
       <CTAButton secondary={!plan.highlight}>Criar conta grátis</CTAButton>
     </div>
   );
 }
 
 export default function LandingPage() {
+  useRevealOnScroll();
+
   return (
-    <div style={page}>
-      <style>{`
-        html { scroll-behavior: smooth; }
-        @media (max-width: 860px) {
-          .landing-header { position: static !important; }
-          .landing-nav-link { display: none !important; }
-          .landing-hero,
-          .landing-card-grid,
-          .landing-pricing-grid {
-            grid-template-columns: 1fr !important;
-          }
-        }
-        @media (max-width: 560px) {
-          .landing-hero { padding-top: 38px !important; }
-          .landing-hero h1 { font-size: 38px !important; }
-          .landing-preview-summary,
-          .landing-preview-grid {
-            grid-template-columns: 1fr !important;
-          }
-        }
-      `}</style>
+    <div className="landing-page">
       <Header />
       <main>
         <Hero />
 
-        <section id="produto" style={{ ...container, padding: "36px 0" }}>
+        <section id="produto" className="cb-container landing-section">
           <SectionHeading
             eyebrow="Produto"
             title="Do PDF ao dashboard em poucos passos."
             text="O CamelBox pega documentos financeiros que você já tem e organiza o mês em uma leitura mais clara."
           />
-          <div className="landing-card-grid" style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0, 1fr))", gap: 12 }}>
+          <div className="landing-card-grid landing-card-grid--four">
             {features.map((feature) => <FeatureCard key={feature.title} {...feature} />)}
           </div>
         </section>
 
-        <section id="como-funciona" style={{ ...container, padding: "36px 0" }}>
+        <section id="como-funciona" className="cb-container landing-section">
           <SectionHeading
             eyebrow="Como funciona"
             title="Menos tempo revisando lançamento por lançamento."
             text="O fluxo foi pensado para sair rápido do arquivo bruto para uma visão que ajuda a decidir."
           />
-          <div className="landing-card-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 12 }}>
+          <div className="landing-card-grid landing-card-grid--three">
             {steps.map((step) => <StepCard key={step.number} {...step} />)}
           </div>
         </section>
 
-        <section id="planos" style={{ ...container, padding: "36px 0" }}>
+        <section id="planos" className="cb-container landing-section">
           <SectionHeading
             eyebrow="Planos"
             title="Comece grátis e aumente quando fizer sentido."
             text="As análises são consumidas ao processar PDFs ou gerar feedback de gastos."
           />
-          <div className="landing-pricing-grid" style={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 14 }}>
+          <div className="landing-pricing-grid">
             {plans.map((plan) => <PricingCard key={plan.name} plan={plan} />)}
           </div>
         </section>
 
-        <section id="sobre" style={{ ...container, padding: "36px 0" }}>
-          <div style={{ background: C.surface, border: `1px solid ${C.border}`, borderRadius: 14, padding: "1.5rem" }}>
+        <section id="sobre" className="cb-container landing-section">
+          <div className="cb-card cb-reveal landing-about-card">
             <SectionHeading eyebrow="Sobre nós" title="Uma leitura financeira que dá para usar." />
-            <p style={{ fontSize: 15, lineHeight: 1.75, color: C.textMuted, margin: 0, maxWidth: 780 }}>
+            <p className="landing-about-card__text">
               O CamelBox nasceu da sensação comum de abrir a fatura, reconhecer alguns gastos e ainda assim não entender o mês.
               A ideia é simples: transformar documentos que já existem em uma leitura financeira que dá para usar.
               Menos tempo caçando lançamento, mais clareza para decidir o que manter, cortar ou acompanhar.
@@ -401,11 +315,11 @@ export default function LandingPage() {
           </div>
         </section>
 
-        <section style={{ ...container, padding: "36px 0 64px" }}>
-          <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 14, padding: "1.5rem", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 16, flexWrap: "wrap" }}>
+        <section className="cb-container landing-section landing-section--final">
+          <div className="cb-card cb-reveal landing-final-card">
             <div>
-              <h2 style={{ fontSize: 24, margin: "0 0 6px", letterSpacing: 0 }}>Comece pelo seu próximo extrato.</h2>
-              <p style={{ fontSize: 14, color: C.textMuted, margin: 0 }}>Crie uma conta grátis e use suas primeiras análises para entender seu mês.</p>
+              <h2>Comece pelo seu próximo extrato.</h2>
+              <p>Crie uma conta grátis e use suas primeiras análises para entender seu mês.</p>
             </div>
             <CTAButton />
           </div>

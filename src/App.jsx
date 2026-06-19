@@ -12,8 +12,6 @@ import PlansModal from './components/PlansModal';
 import useBilling from './hooks/useBilling';
 import useIsMobile from './hooks/useIsMobile';
 
-const C = { bg: "#0F0D08", text: "#F5ECD7" };
-
 function AppLayout() {
   const { user, logout } = useAuth();
   const [currentView, setCurrentView] = useState('dashboard');
@@ -30,7 +28,7 @@ function AppLayout() {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: C.bg, color: C.text }}>
+    <div className="cb-app-shell">
       <Sidebar
         currentView={currentView}
         onNavigate={setCurrentView}
@@ -39,13 +37,7 @@ function AppLayout() {
         onLogout={handleLogout}
         onShowPlans={() => setShowPlans(true)}
       />
-      <main style={{
-        flex: 1,
-        overflowY: 'auto',
-        paddingTop: isMobile ? 50 : 0,
-        paddingBottom: isMobile ? 74 : 0,
-        minWidth: 0,
-      }}>
+      <main className={`cb-main ${isMobile ? 'cb-main--mobile-spaced' : ''}`}>
         {renderView()}
       </main>
       <PlansModal
