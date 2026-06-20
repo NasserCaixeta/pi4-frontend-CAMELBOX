@@ -1,23 +1,8 @@
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import useFeedback from "../hooks/useFeedback";
 import useDashboard from "../hooks/useDashboard";
 import useIsMobile from "../hooks/useIsMobile";
 import ProgressBar from "../components/ProgressBar";
-
-const C = {
-  bg: "#0F0D08",
-  surface: "#1C1810",
-  card: "#231F14",
-  border: "#3A3120",
-  amber: "#D4A843",
-  amberGlow: "rgba(212,168,67,0.1)",
-  text: "#F5ECD7",
-  textMuted: "#8A7A5A",
-  success: "#5A9A6A",
-  successBg: "rgba(90,154,106,0.12)",
-  danger: "#C0503A",
-  dangerBg: "rgba(192,80,58,0.12)",
-};
 
 const fmt = (v) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
@@ -38,6 +23,7 @@ function MonthPicker({ availableMonths, selected, onSelect }) {
         return (
           <button
             key={`${m.year}-${m.month}`}
+            type="button"
             className={`feedback-month-button${active ? " is-active" : ""}`}
             onClick={() => onSelect(m)}
           >
@@ -51,15 +37,15 @@ function MonthPicker({ availableMonths, selected, onSelect }) {
 
 function StatusBadge({ status }) {
   const map = {
-    pending: { color: C.textMuted, label: "Aguardando" },
-    processing: { color: C.amber, label: "Processando" },
-    completed: { color: C.success, label: "Concluído" },
-    error: { color: C.danger, label: "Erro" },
+    pending: { label: "Aguardando", className: "cb-status-badge--pending" },
+    processing: { label: "Processando", className: "cb-status-badge--processing" },
+    completed: { label: "Concluído", className: "cb-status-badge--completed" },
+    error: { label: "Erro", className: "cb-status-badge--error" },
   };
   const s = map[status] || map.pending;
   return (
-    <span className="cb-status-badge" style={{ color: s.color }}>
-      <span className="cb-status-badge__dot" style={{ background: s.color }} />
+    <span className={`cb-status-badge ${s.className}`}>
+      <span className="cb-status-badge__dot" />
       {s.label}
     </span>
   );
@@ -67,13 +53,13 @@ function StatusBadge({ status }) {
 
 function ConfidenceBadge({ value }) {
   const map = {
-    high: { label: "Confiança alta", color: C.success, bg: C.successBg },
-    medium: { label: "Confiança média", color: C.amber, bg: C.amberGlow },
-    low: { label: "Confiança baixa", color: C.textMuted, bg: C.surface },
+    high: { label: "Confiança alta", className: "cb-confidence-badge--high" },
+    medium: { label: "Confiança média", className: "cb-confidence-badge--medium" },
+    low: { label: "Confiança baixa", className: "cb-confidence-badge--low" },
   };
   const item = map[value] || map.medium;
   return (
-    <span className="cb-confidence-badge" style={{ background: item.bg, color: item.color }}>
+    <span className={`cb-confidence-badge ${item.className}`}>
       {item.label}
     </span>
   );
@@ -145,7 +131,7 @@ function FeedbackResult({ feedback }) {
           <p className="feedback-summary">{feedback.summary}</p>
         )}
         {highlights.length > 0 && (
-          <div className="feedback-highlights" style={{ marginTop: feedback.summary ? "1rem" : 0 }}>
+          <div className={`feedback-highlights${feedback.summary ? " feedback-highlights--spaced" : ""}`}>
             {highlights.map((h, i) => (
               <div key={i} className="feedback-highlight">
                 {h}
@@ -163,7 +149,7 @@ function FeedbackResult({ feedback }) {
               Estimativa conservadora baseada nos padrões encontrados nas suas transações do mês.
             </p>
           </div>
-          <div className="feedback-total-saving" style={{ color: totalSaving > 0 ? C.success : C.textMuted }}>
+          <div className={`feedback-total-saving${totalSaving > 0 ? " is-positive" : " is-muted"}`}>
             {fmt(totalSaving || 0)}
           </div>
         </div>
@@ -241,22 +227,20 @@ export default function FeedbackPage() {
   const [selectedMonth, setSelectedMonth] = useState(null);
   const [genError, setGenError] = useState(null);
   const [confirmDelete, setConfirmDelete] = useState(null);
+  const deleteModalRef = useRef(null);
+  const previousFocusRef = useRef(null);
 
-  useEffect(() => {
-    if (availableMonths.length > 0 && !selectedMonth) {
-      setSelectedMonth(availableMonths[availableMonths.length - 1]);
-    }
-  }, [availableMonths, selectedMonth]);
+  const effectiveSelectedMonth = selectedMonth || availableMonths[availableMonths.length - 1] || null;
 
-  const existingForSelected = selectedMonth
-    ? feedbacks.find((f) => f.month === selectedMonth.month && f.year === selectedMonth.year)
+  const existingForSelected = effectiveSelectedMonth
+    ? feedbacks.find((f) => f.month === effectiveSelectedMonth.month && f.year === effectiveSelectedMonth.year)
     : null;
 
   const handleGenerate = async () => {
-    if (!selectedMonth) return;
+    if (!effectiveSelectedMonth) return;
     setGenError(null);
     try {
-      await generate(selectedMonth.month, selectedMonth.year);
+      await generate(effectiveSelectedMonth.month, effectiveSelectedMonth.year);
     } catch (err) {
       setGenError(err.message || "Erro ao gerar análise");
     }
@@ -277,6 +261,61 @@ export default function FeedbackPage() {
   };
 
   const isProcessing = activeFeedback && (activeFeedback.status === "pending" || activeFeedback.status === "processing");
+
+  useEffect(() => {
+    if (!confirmDelete) return undefined;
+
+    previousFocusRef.current = document.activeElement;
+
+    requestAnimationFrame(() => {
+      const modal = deleteModalRef.current;
+      if (!modal) return;
+      const firstButton = modal.querySelector("button:not(:disabled)");
+      (firstButton || modal).focus();
+    });
+
+    return () => {
+      const previousFocus = previousFocusRef.current;
+      if (previousFocus && previousFocus.isConnected && typeof previousFocus.focus === "function") {
+        previousFocus.focus();
+      }
+      previousFocusRef.current = null;
+    };
+  }, [confirmDelete]);
+
+  const handleDeleteModalKeyDown = (e) => {
+    if (e.key === "Escape") {
+      e.stopPropagation();
+      setConfirmDelete(null);
+      return;
+    }
+
+    if (e.key !== "Tab") return;
+
+    const modal = deleteModalRef.current;
+    if (!modal) return;
+
+    const focusable = Array.from(
+      modal.querySelectorAll('button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])')
+    ).filter((element) => !element.hasAttribute("disabled") && element.getAttribute("aria-hidden") !== "true");
+
+    if (!focusable.length) {
+      e.preventDefault();
+      modal.focus();
+      return;
+    }
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    if (e.shiftKey && document.activeElement === first) {
+      e.preventDefault();
+      last.focus();
+    } else if (!e.shiftKey && document.activeElement === last) {
+      e.preventDefault();
+      first.focus();
+    }
+  };
 
   return (
     <div className={`feedback-page${isMobile ? " is-mobile" : ""}`}>
@@ -299,11 +338,11 @@ export default function FeedbackPage() {
               <>
                 <div className="feedback-field-group">
                   <div className="feedback-field-label">Selecione o mês</div>
-                  <MonthPicker availableMonths={availableMonths} selected={selectedMonth} onSelect={setSelectedMonth} />
+                  <MonthPicker availableMonths={availableMonths} selected={effectiveSelectedMonth} onSelect={setSelectedMonth} />
                 </div>
                 {existingForSelected && existingForSelected.status !== "error" ? (
                   <div className="feedback-alert feedback-alert--success">
-                    ✓ Já existe uma análise para {selectedMonth && monthLabel(selectedMonth.month, selectedMonth.year)}.
+                    ✓ Já existe uma análise para {effectiveSelectedMonth && monthLabel(effectiveSelectedMonth.month, effectiveSelectedMonth.year)}.
                     <button
                       onClick={() => handleSelectHistory(existingForSelected)}
                       className="feedback-inline-action"
@@ -324,7 +363,7 @@ export default function FeedbackPage() {
                 {(!existingForSelected || existingForSelected.status === "error") && (
                   <button
                     onClick={handleGenerate}
-                    disabled={generating || !selectedMonth}
+                    disabled={generating || !effectiveSelectedMonth}
                     className="cb-button cb-button--primary feedback-generate-button"
                   >
                     {generating ? "Gerando análise..." : "Gerar Análise de Gastos"}
@@ -378,18 +417,27 @@ export default function FeedbackPage() {
                   return (
                     <div
                       key={fb.id}
-                      className={`cb-history-item${isActive ? " is-active" : ""}`}
-                      onClick={() => handleSelectHistory(fb)}>
-                      <div className="feedback-history-head">
-                        <span className="feedback-history-title">{monthLabel(fb.month, fb.year)}</span>
-                        <StatusBadge status={fb.status} />
-                      </div>
-                      <div className="feedback-history-meta-row">
-                        <span className="feedback-history-date">
-                          {new Date(fb.created_at).toLocaleDateString("pt-BR")}
-                        </span>
+                      className={`cb-history-item${isActive ? " is-active" : ""}`}>
+                      <button
+                        type="button"
+                        className="feedback-history-select"
+                        onClick={() => handleSelectHistory(fb)}
+                        aria-current={isActive ? "true" : undefined}
+                      >
+                        <div className="feedback-history-head">
+                          <span className="feedback-history-title">{monthLabel(fb.month, fb.year)}</span>
+                          <StatusBadge status={fb.status} />
+                        </div>
+                        <div className="feedback-history-meta-row">
+                          <span className="feedback-history-date">
+                            {new Date(fb.created_at).toLocaleDateString("pt-BR")}
+                          </span>
+                        </div>
+                      </button>
+                      <div className="feedback-history-actions">
                         <button
-                          onClick={(e) => { e.stopPropagation(); setConfirmDelete(fb.id); }}
+                          type="button"
+                          onClick={() => setConfirmDelete(fb.id)}
                           className="feedback-delete-button">
                           Excluir
                         </button>
@@ -406,13 +454,21 @@ export default function FeedbackPage() {
       {/* Delete confirm modal */}
       {confirmDelete && (
         <div className="cb-modal-overlay" onClick={() => setConfirmDelete(null)}>
-          <div className="cb-modal feedback-delete-modal"
-            onClick={(e) => e.stopPropagation()}>
-            <div className="feedback-delete-modal__title">Excluir análise?</div>
+          <div
+            ref={deleteModalRef}
+            className="cb-modal feedback-delete-modal"
+            onClick={(e) => e.stopPropagation()}
+            onKeyDown={handleDeleteModalKeyDown}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="feedback-delete-title"
+            tabIndex={-1}
+          >
+            <div id="feedback-delete-title" className="feedback-delete-modal__title">Excluir análise?</div>
             <div className="feedback-delete-modal__copy">Esta ação não pode ser desfeita.</div>
             <div className="feedback-delete-modal__actions">
-              <button onClick={() => setConfirmDelete(null)} className="cb-button cb-button--secondary cb-button--small">Cancelar</button>
-              <button onClick={() => { deleteFeedback(confirmDelete); setConfirmDelete(null); }} className="cb-button cb-button--danger-solid cb-button--small">Excluir</button>
+              <button type="button" onClick={() => setConfirmDelete(null)} className="cb-button cb-button--secondary cb-button--small">Cancelar</button>
+              <button type="button" onClick={() => { deleteFeedback(confirmDelete); setConfirmDelete(null); }} className="cb-button cb-button--danger-solid cb-button--small">Excluir</button>
             </div>
           </div>
         </div>

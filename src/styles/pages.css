@@ -500,6 +500,10 @@
   align-items: start;
 }
 
+.feedback-layout > * {
+  min-width: 0;
+}
+
 .feedback-stack {
   display: flex;
   flex-direction: column;
@@ -831,6 +835,7 @@
 
 .profile-info-grid {
   display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: var(--cb-space-3) var(--cb-space-6);
 }
 
@@ -870,6 +875,12 @@
 
 .profile-mobile-action:last-child {
   margin-bottom: 0;
+}
+
+@media (max-width: 767px) {
+  .profile-info-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .landing-page {

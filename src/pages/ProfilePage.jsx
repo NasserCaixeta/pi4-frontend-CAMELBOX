@@ -102,7 +102,7 @@ export default function ProfilePage({ onLogout, onShowPlans }) {
       {/* Info card */}
       <Card className="profile-card--spaced">
         <SectionTitle>Informações da Conta</SectionTitle>
-        <div className="profile-info-grid" style={{ gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr" }}>
+        <div className="profile-info-grid">
           <div>
             <div className="profile-info-label">Email</div>
             <div className="profile-info-value">{user?.email}</div>

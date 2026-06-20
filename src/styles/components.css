@@ -38,6 +38,7 @@
   border-radius: 50%;
   flex-shrink: 0;
   display: inline-block;
+  background: currentColor;
 }
 
 .cb-confidence-badge {
@@ -45,6 +46,37 @@
   border-radius: var(--cb-radius-pill);
   font-size: 11px;
   font-weight: 600;
+}
+
+.cb-status-badge--pending,
+.cb-confidence-badge--low {
+  color: var(--cb-color-muted);
+}
+
+.cb-status-badge--processing,
+.cb-confidence-badge--medium {
+  color: var(--cb-color-amber);
+}
+
+.cb-status-badge--completed,
+.cb-confidence-badge--high {
+  color: var(--cb-color-success);
+}
+
+.cb-status-badge--error {
+  color: var(--cb-color-danger);
+}
+
+.cb-confidence-badge--high {
+  background: var(--cb-color-success-bg);
+}
+
+.cb-confidence-badge--medium {
+  background: var(--cb-color-amber-glow);
+}
+
+.cb-confidence-badge--low {
+  background: var(--cb-color-surface);
 }
 
 .cb-insight-card {
@@ -59,7 +91,6 @@
   border: 1px solid var(--cb-color-border);
   border-radius: var(--cb-radius-3);
   background: var(--cb-color-surface);
-  cursor: pointer;
 }
 
 .cb-history-item.is-active {
@@ -111,6 +142,18 @@
   line-height: 1.7;
 }
 
+.feedback-summary,
+.feedback-highlight,
+.feedback-insight-title,
+.feedback-insight-meta,
+.feedback-insight-reason,
+.feedback-insight-suggestion,
+.feedback-evidence-item,
+.feedback-subscription-name,
+.feedback-subscription-meta {
+  overflow-wrap: anywhere;
+}
+
 .feedback-muted-paragraph {
   color: var(--cb-color-muted);
   font-size: 12px;
@@ -133,6 +176,10 @@
   gap: 8px;
 }
 
+.feedback-highlights--spaced {
+  margin-top: var(--cb-space-4);
+}
+
 .feedback-highlight {
   padding: 10px 12px;
   border: 1px solid var(--cb-color-border);
@@ -146,6 +193,14 @@
 .feedback-total-saving {
   font-size: 24px;
   font-weight: 800;
+}
+
+.feedback-total-saving.is-positive {
+  color: var(--cb-color-success);
+}
+
+.feedback-total-saving.is-muted {
+  color: var(--cb-color-muted);
 }
 
 .feedback-success-total,
@@ -249,6 +304,10 @@
   background: var(--cb-color-surface);
 }
 
+.feedback-subscription-item > :first-child {
+  min-width: 0;
+}
+
 .feedback-subscription-title-row {
   display: flex;
   align-items: center;
@@ -280,6 +339,24 @@
   color: var(--cb-color-text);
   font-size: 13px;
   font-weight: 500;
+}
+
+.feedback-history-select {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.feedback-history-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 4px;
 }
 
 .feedback-delete-button,
