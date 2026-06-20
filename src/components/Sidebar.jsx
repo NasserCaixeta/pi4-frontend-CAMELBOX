@@ -1,15 +1,5 @@
 import useIsMobile from '../hooks/useIsMobile';
 
-const C = {
-  bg: "#0F0D08",
-  surface: "#1C1810",
-  border: "#3A3120",
-  amber: "#D4A843",
-  amberGlow: "rgba(212,168,67,0.1)",
-  text: "#F5ECD7",
-  textMuted: "#8A7A5A",
-};
-
 const NavIcons = {
   dashboard: (
     <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
@@ -43,27 +33,14 @@ export default function Sidebar({ currentView, onNavigate, user, billing, onLogo
   if (isMobile) {
     return (
       <>
-        {/* Top header */}
-        <div style={{
-          position: "fixed", top: 0, left: 0, right: 0, height: 50,
-          background: C.surface, borderBottom: `1px solid ${C.border}`,
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          padding: "0 1rem", zIndex: 200,
-          fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif",
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            <div style={{
-              width: 28, height: 28, background: C.amber, borderRadius: 7,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontFamily: "Georgia, serif", fontSize: 16, fontWeight: 700, color: C.bg, lineHeight: 1,
-            }}>C</div>
-            <span style={{ fontSize: 14, fontWeight: 700, color: C.text, letterSpacing: "-0.3px" }}>CamelBox</span>
+        <div className="cb-mobile-header">
+          <div className="landing-logo">
+            <div className="landing-logo__mark">C</div>
+            <div className="landing-logo__name">CamelBox</div>
           </div>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <div>
             {billing && (
-              <span style={{
-                fontSize: 10, color: C.textMuted, fontWeight: 500,
-              }}>
+              <span className="cb-muted cb-text-xs cb-mobile-header__billing">
                 {billing.plan === "free"
                   ? `Grátis · ${billing.analyses_remaining}/${billing.analyses_limit}`
                   : billing.plan === "super"
@@ -74,101 +51,61 @@ export default function Sidebar({ currentView, onNavigate, user, billing, onLogo
           </div>
         </div>
 
-        {/* Bottom nav */}
-        <div style={{
-          position: "fixed", bottom: 0, left: 0, right: 0, height: 74,
-          background: C.surface, borderTop: `1px solid ${C.border}`,
-          display: "flex", alignItems: "stretch", zIndex: 200,
-        }}>
+        <nav className="cb-mobile-nav" aria-label="Navegação principal">
           {NAV_ITEMS.map((item) => {
             const active = currentView === item.id;
             return (
               <button
                 key={item.id}
+                type="button"
                 onClick={() => onNavigate(item.id)}
-                style={{
-                  flex: 1, display: "flex", flexDirection: "column",
-                  alignItems: "center", justifyContent: "center", gap: 4,
-                  border: "none", borderTop: active ? `2px solid ${C.amber}` : "2px solid transparent",
-                  background: active ? C.amberGlow : "transparent",
-                  color: active ? C.amber : C.textMuted,
-                  cursor: "pointer", fontFamily: "inherit",
-                }}
+                className={`cb-mobile-nav__item${active ? " is-active" : ""}`}
+                aria-current={active ? "page" : undefined}
               >
-                <span style={{ display: "flex", transform: "scale(1.33)", transformOrigin: "center" }}>{NavIcons[item.id]}</span>
-                <span style={{ fontSize: 11, fontWeight: active ? 600 : 400 }}>{item.shortLabel}</span>
+                <span className="cb-icon-scale">{NavIcons[item.id]}</span>
+                <span className="cb-text-xs">{item.shortLabel}</span>
               </button>
             );
           })}
-        </div>
+        </nav>
       </>
     );
   }
 
   // ── Desktop sidebar ───────────────────────────────────────────────────────
   return (
-    <div style={{
-      width: 220,
-      minHeight: "100vh",
-      background: C.surface,
-      borderRight: `1px solid ${C.border}`,
-      display: "flex",
-      flexDirection: "column",
-      flexShrink: 0,
-      position: "sticky",
-      top: 0,
-      height: "100vh",
-    }}>
-      {/* Logo */}
-      <div style={{ padding: "1.25rem 1rem 1rem", borderBottom: `1px solid ${C.border}` }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div style={{
-            width: 34, height: 34, background: C.amber, borderRadius: 8,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontFamily: "Georgia, serif", fontSize: 20, fontWeight: 700, color: C.bg, lineHeight: 1,
-          }}>C</div>
+    <div className="cb-sidebar">
+      <div className="cb-sidebar__brand">
+        <div className="landing-logo">
+          <div className="landing-logo__mark">C</div>
           <div>
-            <div style={{ fontSize: 15, fontWeight: 700, color: C.text, letterSpacing: "-0.3px" }}>CamelBox</div>
-            <div style={{ fontSize: 11, color: C.textMuted }}>Análise Financeira</div>
+            <div className="landing-logo__name">CamelBox</div>
+            <div className="landing-logo__sub">Análise Financeira</div>
           </div>
         </div>
       </div>
 
-      {/* Nav items */}
-      <nav style={{ flex: 1, padding: "0.75rem 0.5rem" }}>
+      <nav className="cb-sidebar__nav" aria-label="Navegação principal">
         {NAV_ITEMS.map((item) => {
           const active = currentView === item.id;
           return (
             <button
               key={item.id}
+              type="button"
               onClick={() => onNavigate(item.id)}
-              style={{
-                width: "100%", display: "flex", alignItems: "center", gap: 10,
-                padding: "9px 12px", borderRadius: 9, border: "none",
-                background: active ? C.amberGlow : "transparent",
-                color: active ? C.amber : C.textMuted,
-                fontSize: 13, fontWeight: active ? 600 : 400,
-                cursor: "pointer", fontFamily: "inherit", textAlign: "left",
-                marginBottom: 2, transition: "all 0.15s",
-                borderLeft: active ? `2px solid ${C.amber}` : "2px solid transparent",
-              }}
-              onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "rgba(212,168,67,0.05)"; }}
-              onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
+              className={`cb-nav-item${active ? " is-active" : ""}`}
+              aria-current={active ? "page" : undefined}
             >
-              <span style={{ display: "flex", color: active ? C.amber : C.textMuted }}>{NavIcons[item.id]}</span>
+              <span className="cb-nav-item__icon">{NavIcons[item.id]}</span>
               <span>{item.label}</span>
             </button>
           );
         })}
       </nav>
 
-      {/* Footer */}
-      <div style={{ padding: "0.75rem 1rem", borderTop: `1px solid ${C.border}` }}>
+      <div className="cb-sidebar__footer">
         {billing && (
-          <div style={{
-            fontSize: 11, color: C.textMuted,
-            marginBottom: 8,
-          }}>
+          <div className="cb-muted cb-text-xs cb-sidebar__billing">
             {billing.plan === "free"
               ? `Plano Grátis · ${billing.analyses_remaining} análises restantes`
               : billing.plan === "super"
@@ -177,24 +114,22 @@ export default function Sidebar({ currentView, onNavigate, user, billing, onLogo
           </div>
         )}
         {onShowPlans && (
-          <button onClick={onShowPlans} style={{
-            width: "100%", padding: "7px 10px", borderRadius: 8,
-            border: `1px solid ${C.amber}`, background: C.amberGlow,
-            color: C.amber, fontSize: 12, fontWeight: 500,
-            cursor: "pointer", fontFamily: "inherit", marginBottom: 6,
-          }}>
+          <button
+            type="button"
+            onClick={onShowPlans}
+            className="cb-button cb-button--outline cb-sidebar__action"
+          >
             Aumentar plano
           </button>
         )}
-        <div style={{ fontSize: 12, color: C.textMuted, marginBottom: 6, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+        <div className="cb-muted cb-sidebar__user">
           {user?.name || user?.email}
         </div>
-        <button onClick={onLogout} style={{
-          width: "100%", padding: "7px 10px", borderRadius: 8,
-          border: `1px solid ${C.border}`, background: "transparent",
-          color: C.textMuted, fontSize: 12,
-          cursor: "pointer", fontFamily: "inherit",
-        }}>
+        <button
+          type="button"
+          onClick={onLogout}
+          className="cb-button cb-button--secondary cb-sidebar__logout"
+        >
           Sair
         </button>
       </div>

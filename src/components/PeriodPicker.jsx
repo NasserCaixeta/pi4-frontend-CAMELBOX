@@ -1,15 +1,5 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import useIsMobile from "../hooks/useIsMobile";
-
-const C = {
-  bg: "#0F0D08",
-  surface: "#1C1810",
-  border: "#3A3120",
-  amber: "#D4A843",
-  amberGlow: "rgba(212,168,67,0.1)",
-  text: "#F5ECD7",
-  textMuted: "#8A7A5A",
-};
 
 function pad(n) { return String(n).padStart(2, "0"); }
 function lastDayOfMonth(year, month) { return new Date(year, month, 0).getDate(); }
@@ -37,6 +27,7 @@ export default function PeriodPicker({ availableMonths, value, onChange }) {
   const [open, setOpen] = useState(false);
   const [start, setStart] = useState(null);
   const [end, setEnd] = useState(null);
+  const triggerRef = useRef(null);
 
   const monthsSet = useMemo(() => new Set(availableMonths.map(m => keyFor(m.year, m.month))), [availableMonths]);
   const sorted = useMemo(() => [...availableMonths].sort((a,b)=> a.year!==b.year? a.year-b.year : a.month-b.month), [availableMonths]);
@@ -60,6 +51,17 @@ export default function PeriodPicker({ availableMonths, value, onChange }) {
     setEnd(k);
   }
 
+  function focusTrigger() {
+    triggerRef.current?.focus();
+  }
+
+  function closePicker(restoreFocus = false) {
+    setOpen(false);
+    if (restoreFocus) {
+      requestAnimationFrame(focusTrigger);
+    }
+  }
+
   function applyRange(selStart, selEnd) {
     if (!selStart) return;
     const a = selStart;
@@ -74,14 +76,14 @@ export default function PeriodPicker({ availableMonths, value, onChange }) {
       const label = buildLabelFromRange(a, b);
       onChange({ startDate: s, endDate: e }, label);
     }
-    setOpen(false);
+    closePicker(true);
   }
 
   function shortcutCurrentMonth() {
     if (!sorted.length) return;
     const last = sorted[sorted.length - 1];
     onChange({ month: last.month, year: last.year }, monthLabel(last.month, last.year));
-    setOpen(false);
+    closePicker(true);
   }
 
   function shortcutLastN(n) {
@@ -107,21 +109,21 @@ export default function PeriodPicker({ availableMonths, value, onChange }) {
     return afterA && beforeB;
   }
 
-  const btnStyle = {
-    padding: "6px 10px", borderRadius: 7, border: `1px solid ${C.border}`,
-    background: "transparent", color: C.text, fontSize: 12,
-    cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap",
-  };
-
-  const panelStyle = isMobile
-    ? { position: "fixed", left: "1rem", right: "1rem", top: "50%", transform: "translateY(-50%)" }
-    : { position: "absolute", right: 0, top: "calc(100% + 8px)", minWidth: 520 };
+  function handleKeyDown(e) {
+    if (e.key !== "Escape" || !open) return;
+    e.stopPropagation();
+    closePicker(true);
+  }
 
   return (
-    <div style={{ position: "relative" }}>
+    <div className="cb-period-picker" onKeyDown={handleKeyDown}>
       <button
+        ref={triggerRef}
         onClick={() => setOpen(o => !o)}
-        style={{ padding: "6px 12px", borderRadius: 7, border: `1px solid ${C.border}`, background: "transparent", color: C.text, fontSize: 12, fontWeight: 500, cursor: "pointer", fontFamily: "inherit" }}
+        className="cb-button cb-period-trigger cb-period-shortcut"
+        aria-haspopup="dialog"
+        aria-expanded={open}
+        aria-controls="period-picker-panel"
       >
         {currentLabel} ›
       </button>
@@ -129,34 +131,39 @@ export default function PeriodPicker({ availableMonths, value, onChange }) {
       {open && (
         <>
           <div
-            onClick={() => setOpen(false)}
-            style={{ position: "fixed", inset: 0, background: isMobile ? "rgba(0,0,0,0.5)" : "transparent", zIndex: 49 }}
+            onClick={() => closePicker(true)}
+            className={`cb-period-backdrop${isMobile ? " is-mobile" : ""}`}
           />
-          <div style={{ ...panelStyle, zIndex: 50, background: C.surface, border: `1px solid ${C.border}`, borderRadius: 10, padding: 14, color: C.text }}>
-            <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "180px 1fr", gap: 14 }}>
+          <div
+            id="period-picker-panel"
+            className="cb-popover cb-period-panel"
+            role="dialog"
+            aria-label="Selecionar período"
+          >
+            <div className="cb-period-layout">
               {/* Shortcuts */}
               <div>
-                <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 8 }}>Atalhos</div>
-                <div style={{ display: "flex", flexDirection: isMobile ? "row" : "column", flexWrap: "wrap", gap: 6 }}>
-                  <button onClick={shortcutCurrentMonth} style={btnStyle}>Mês atual</button>
+                <div className="cb-period-section-title">Atalhos</div>
+                <div className="cb-period-shortcuts">
+                  <button onClick={shortcutCurrentMonth} className="cb-button cb-period-shortcut">Mês atual</button>
                   {sorted.length >= 3 && (
-                    <button onClick={() => shortcutLastN(3)} style={btnStyle}>Últ. 3 meses</button>
+                    <button onClick={() => shortcutLastN(3)} className="cb-button cb-period-shortcut">Últ. 3 meses</button>
                   )}
                   {sorted.length >= 6 && (
-                    <button onClick={() => shortcutLastN(6)} style={btnStyle}>Últ. 6 meses</button>
+                    <button onClick={() => shortcutLastN(6)} className="cb-button cb-period-shortcut">Últ. 6 meses</button>
                   )}
-                  <button onClick={shortcutThisYear} style={btnStyle}>Este ano</button>
+                  <button onClick={shortcutThisYear} className="cb-button cb-period-shortcut">Este ano</button>
                 </div>
               </div>
 
               {/* Month grid */}
               <div>
-                <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 8 }}>Personalizado</div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div className="cb-period-section-title">Personalizado</div>
+                <div className="cb-period-years">
                   {years.map((y) => (
                     <div key={y}>
-                      <div style={{ fontSize: 11, color: C.textMuted, marginBottom: 6 }}>{y}</div>
-                      <div style={{ display: "grid", gridTemplateColumns: `repeat(${isMobile ? 4 : 6}, minmax(0, 1fr))`, gap: 5 }}>
+                      <div className="cb-period-year">{y}</div>
+                      <div className="cb-month-grid">
                         {Array.from({ length: 12 }).map((_, i) => {
                           const m = i + 1;
                           const enabled = monthsSet.has(keyFor(y, m));
@@ -166,14 +173,8 @@ export default function PeriodPicker({ availableMonths, value, onChange }) {
                           return (
                             <button key={m} disabled={!enabled}
                               onClick={() => enabled && handlePickMonth(y, m)}
-                              style={{
-                                padding: "5px 4px", borderRadius: 6, fontFamily: "inherit",
-                                border: `1px solid ${isStart || isEnd ? C.amber : C.border}`,
-                                background: isStart || isEnd ? C.amberGlow : inPreview ? C.amberGlow : "transparent",
-                                color: enabled ? (isStart || isEnd ? C.amber : C.text) : C.textMuted,
-                                cursor: enabled ? "pointer" : "not-allowed",
-                                fontSize: 11,
-                              }}
+                              aria-pressed={Boolean(isStart || isEnd || inPreview)}
+                              className={`cb-month-button${isStart || isEnd ? " is-selected" : ""}${inPreview ? " is-in-range" : ""}`}
                             >{monthLabel(m, y, "short").split(" ")[0]}</button>
                           );
                         })}
@@ -181,10 +182,10 @@ export default function PeriodPicker({ availableMonths, value, onChange }) {
                     </div>
                   ))}
                 </div>
-                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 12, gap: 8 }}>
-                  <button onClick={() => setOpen(false)} style={{ ...btnStyle, color: C.textMuted }}>Cancelar</button>
+                <div className="cb-period-actions">
+                  <button onClick={() => closePicker(true)} className="cb-button cb-period-shortcut cb-button--ghost">Cancelar</button>
                   <button onClick={() => applyRange(start, end)} disabled={!start}
-                    style={{ ...btnStyle, border: `1px solid ${C.amber}`, color: C.amber, fontWeight: 600, opacity: start ? 1 : 0.5 }}>
+                    className="cb-button cb-period-shortcut cb-period-apply">
                     Aplicar
                   </button>
                 </div>

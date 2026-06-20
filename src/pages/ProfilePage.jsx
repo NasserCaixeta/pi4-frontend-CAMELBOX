@@ -3,53 +3,35 @@ import { useAuth } from "../context/AuthContext";
 import api from "../services/api";
 import useIsMobile from "../hooks/useIsMobile";
 
-const C = {
-  bg: "#0F0D08",
-  surface: "#1C1810",
-  card: "#231F14",
-  border: "#3A3120",
-  amber: "#D4A843",
-  amberGlow: "rgba(212,168,67,0.1)",
-  text: "#F5ECD7",
-  textMuted: "#8A7A5A",
-  success: "#5A9A6A",
-  successBg: "rgba(90,154,106,0.12)",
-  danger: "#C0503A",
-  dangerBg: "rgba(192,80,58,0.12)",
-};
-
-const Card = ({ children, style }) => (
-  <div style={{ background: C.card, border: `1px solid ${C.border}`, borderRadius: 16, padding: "1.5rem", ...style }}>
+const Card = ({ children, className = "" }) => (
+  <div className={`cb-card profile-card${className ? ` ${className}` : ""}`}>
     {children}
   </div>
 );
 
 const SectionTitle = ({ children }) => (
-  <div style={{ fontSize: 13, fontWeight: 600, color: C.textMuted, letterSpacing: "0.6px", textTransform: "uppercase", marginBottom: "1.25rem" }}>
+  <div className="profile-section-title">
     {children}
   </div>
 );
 
-function Field({ label, type = "text", value, onChange, placeholder, disabled }) {
+function Field({ id, label, type = "text", value, onChange, placeholder, disabled, error }) {
+  const errorId = `${id}-error`;
   return (
-    <div style={{ marginBottom: "1rem" }}>
-      <label style={{ display: "block", fontSize: 12, color: C.textMuted, marginBottom: 6 }}>{label}</label>
+    <div className="cb-field">
+      <label className="cb-label" htmlFor={id}>{label}</label>
       <input
+        id={id}
+        className="cb-input"
         type={type}
         value={value}
         onChange={onChange}
         placeholder={placeholder}
         disabled={disabled}
-        style={{
-          width: "100%", padding: "10px 14px",
-          background: disabled ? C.surface : C.surface,
-          border: `1px solid ${C.border}`, borderRadius: 10,
-          color: disabled ? C.textMuted : C.text,
-          fontSize: 14, fontFamily: "inherit", outline: "none",
-          boxSizing: "border-box",
-          opacity: disabled ? 0.6 : 1,
-        }}
+        aria-invalid={Boolean(error)}
+        aria-describedby={error ? errorId : undefined}
       />
+      {error && <div id={errorId} className="cb-message is-error profile-field-error">{error}</div>}
     </div>
   );
 }
@@ -107,77 +89,62 @@ export default function ProfilePage({ onLogout, onShowPlans }) {
   const joinedDate = user?.created_at
     ? new Date(user.created_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "long", year: "numeric" })
     : "—";
+  const canSaveName = !nameLoading && name !== (user?.name || "");
+  const canChangePassword = !pwLoading && currentPw && newPw && confirmPw;
 
   return (
-    <div style={{ padding: isMobile ? "1rem" : "1.5rem 2rem", fontFamily: "'DM Sans', 'Segoe UI', system-ui, sans-serif", color: C.text, maxWidth: 700 }}>
-      <div style={{ marginBottom: "1.75rem" }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, letterSpacing: "-0.4px", margin: 0 }}>Meu Perfil</h1>
-        <p style={{ fontSize: 13, color: C.textMuted, marginTop: 4 }}>Gerencie suas informações pessoais</p>
+    <div className="profile-page">
+      <div className="profile-header">
+        <h1>Meu Perfil</h1>
+        <p>Gerencie suas informações pessoais</p>
       </div>
 
       {/* Info card */}
-      <Card style={{ marginBottom: "1.25rem" }}>
+      <Card className="profile-card--spaced">
         <SectionTitle>Informações da Conta</SectionTitle>
-        <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "0.75rem 1.5rem" }}>
+        <div className="profile-info-grid">
           <div>
-            <div style={{ fontSize: 11, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 4 }}>Email</div>
-            <div style={{ fontSize: 14, color: C.text }}>{user?.email}</div>
+            <div className="profile-info-label">Email</div>
+            <div className="profile-info-value">{user?.email}</div>
           </div>
           <div>
-            <div style={{ fontSize: 11, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 4 }}>Membro desde</div>
-            <div style={{ fontSize: 14, color: C.text }}>{joinedDate}</div>
+            <div className="profile-info-label">Membro desde</div>
+            <div className="profile-info-value">{joinedDate}</div>
           </div>
           <div>
-            <div style={{ fontSize: 11, color: C.textMuted, textTransform: "uppercase", letterSpacing: "0.4px", marginBottom: 4 }}>Provedor</div>
-            <div style={{ fontSize: 14, color: C.text, textTransform: "capitalize" }}>{user?.auth_provider || "email"}</div>
+            <div className="profile-info-label">Provedor</div>
+            <div className="profile-info-value profile-info-value--capitalize">{user?.auth_provider || "email"}</div>
           </div>
         </div>
       </Card>
 
       {/* Edit name */}
-      <Card style={{ marginBottom: "1.25rem" }}>
+      <Card className="profile-card--spaced">
         <SectionTitle>Editar Nome</SectionTitle>
-        <Field label="Nome" value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome" />
-        {nameMsg && (
-          <div style={{
-            padding: "8px 12px", borderRadius: 8, fontSize: 12, marginBottom: "0.75rem",
-            background: nameMsg.type === "success" ? C.successBg : C.dangerBg,
-            color: nameMsg.type === "success" ? C.success : C.danger,
-          }}>{nameMsg.text}</div>
-        )}
-        <button
-          onClick={handleSaveName}
-          disabled={nameLoading || name === (user?.name || "")}
-          style={{
-            padding: "9px 20px", borderRadius: 9, border: "none",
-            background: C.amber, color: C.bg, fontSize: 13, fontWeight: 600,
-            cursor: nameLoading || name === (user?.name || "") ? "not-allowed" : "pointer",
-            fontFamily: "inherit", opacity: nameLoading || name === (user?.name || "") ? 0.6 : 1,
-          }}
-        >
-          {nameLoading ? "Salvando..." : "Salvar Nome"}
-        </button>
+        <form onSubmit={(e) => { e.preventDefault(); if (canSaveName) handleSaveName(); }}>
+          <Field id="profile-name" label="Nome" value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome" />
+          {nameMsg && (
+            <div className={`cb-message profile-message is-${nameMsg.type}`}>{nameMsg.text}</div>
+          )}
+          <button
+            type="submit"
+            disabled={!canSaveName}
+            className="cb-button cb-button--primary cb-button--compact"
+          >
+            {nameLoading ? "Salvando..." : "Salvar Nome"}
+          </button>
+        </form>
       </Card>
 
       {/* Change password — only for email auth */}
       {isMobile && (
-        <Card style={{ marginBottom: "1.25rem" }}>
+        <Card className="profile-card--spaced">
           <SectionTitle>Conta</SectionTitle>
           {onShowPlans && (
-            <button onClick={onShowPlans} style={{
-              width: "100%", padding: "9px 14px", borderRadius: 9,
-              border: `1px solid ${C.amber}`, background: C.amberGlow,
-              color: C.amber, fontSize: 13, fontWeight: 500,
-              cursor: "pointer", fontFamily: "inherit", marginBottom: 8,
-            }}>Aumentar plano</button>
+            <button type="button" onClick={onShowPlans} className="cb-button cb-button--outline profile-mobile-action">Aumentar plano</button>
           )}
           {onLogout && (
-            <button onClick={onLogout} style={{
-              width: "100%", padding: "9px 14px", borderRadius: 9,
-              border: `1px solid ${C.border}`, background: "transparent",
-              color: C.textMuted, fontSize: 13,
-              cursor: "pointer", fontFamily: "inherit",
-            }}>Sair</button>
+            <button type="button" onClick={onLogout} className="cb-button cb-button--ghost profile-mobile-action">Sair</button>
           )}
         </Card>
       )}
@@ -185,28 +152,21 @@ export default function ProfilePage({ onLogout, onShowPlans }) {
       {user?.auth_provider === "email" && (
         <Card>
           <SectionTitle>Alterar Senha</SectionTitle>
-          <Field label="Senha atual" type="password" value={currentPw} onChange={(e) => setCurrentPw(e.target.value)} placeholder="••••••••" />
-          <Field label="Nova senha" type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} placeholder="Mínimo 8 caracteres" />
-          <Field label="Confirmar nova senha" type="password" value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} placeholder="Repita a nova senha" />
-          {pwMsg && (
-            <div style={{
-              padding: "8px 12px", borderRadius: 8, fontSize: 12, marginBottom: "0.75rem",
-              background: pwMsg.type === "success" ? C.successBg : C.dangerBg,
-              color: pwMsg.type === "success" ? C.success : C.danger,
-            }}>{pwMsg.text}</div>
-          )}
-          <button
-            onClick={handleChangePassword}
-            disabled={pwLoading || !currentPw || !newPw || !confirmPw}
-            style={{
-              padding: "9px 20px", borderRadius: 9, border: "none",
-              background: C.amber, color: C.bg, fontSize: 13, fontWeight: 600,
-              cursor: pwLoading || !currentPw || !newPw || !confirmPw ? "not-allowed" : "pointer",
-              fontFamily: "inherit", opacity: pwLoading || !currentPw || !newPw || !confirmPw ? 0.6 : 1,
-            }}
-          >
-            {pwLoading ? "Alterando..." : "Alterar Senha"}
-          </button>
+          <form onSubmit={(e) => { e.preventDefault(); if (canChangePassword) handleChangePassword(); }}>
+            <Field id="profile-current-password" label="Senha atual" type="password" value={currentPw} onChange={(e) => setCurrentPw(e.target.value)} placeholder="••••••••" />
+            <Field id="profile-new-password" label="Nova senha" type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} placeholder="Mínimo 8 caracteres" />
+            <Field id="profile-confirm-password" label="Confirmar nova senha" type="password" value={confirmPw} onChange={(e) => setConfirmPw(e.target.value)} placeholder="Repita a nova senha" />
+            {pwMsg && (
+              <div className={`cb-message profile-message is-${pwMsg.type}`}>{pwMsg.text}</div>
+            )}
+            <button
+              type="submit"
+              disabled={!canChangePassword}
+              className="cb-button cb-button--primary cb-button--compact"
+            >
+              {pwLoading ? "Alterando..." : "Alterar Senha"}
+            </button>
+          </form>
         </Card>
       )}
     </div>

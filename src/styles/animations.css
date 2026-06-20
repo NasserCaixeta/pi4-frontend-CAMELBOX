@@ -1,0 +1,135 @@
+@keyframes cb-reveal-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cb-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes cb-progress-indeterminate {
+  0% { left: -35%; width: 35%; }
+  60% { left: 100%; width: 35%; }
+  100% { left: 100%; width: 35%; }
+}
+
+@keyframes cb-progress-short {
+  0% { left: -200%; width: 200%; }
+  60% { left: 107%; width: 200%; }
+  100% { left: 107%; width: 200%; }
+}
+
+@keyframes landing-donut-in {
+  from {
+    opacity: 0;
+    transform: rotate(-22deg) scale(0.86);
+  }
+
+  to {
+    opacity: 1;
+    transform: rotate(0) scale(1);
+  }
+}
+
+@keyframes landing-bar-fill {
+  from {
+    transform: scaleX(0);
+  }
+
+  to {
+    transform: scaleX(1);
+  }
+}
+
+.cb-reveal {
+  opacity: 0;
+  transform: translateY(18px);
+}
+
+.cb-reveal.is-visible {
+  animation: cb-reveal-up var(--cb-duration-slow) var(--cb-ease-emphasis) both;
+}
+
+.cb-animate-delay-1 {
+  animation-delay: 80ms;
+}
+
+.cb-animate-delay-2 {
+  animation-delay: 160ms;
+}
+
+.cb-animate-delay-3 {
+  animation-delay: 240ms;
+}
+
+.cb-animate-delay-4 {
+  animation-delay: 320ms;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cb-reveal,
+  .cb-reveal.is-visible {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .cb-progress__bar,
+  .cb-progress__bar-secondary {
+    animation: none;
+  }
+
+  .cb-progress__bar {
+    left: 0;
+    width: 100%;
+  }
+
+  .cb-progress__bar-secondary {
+    display: none;
+  }
+
+  .landing-preview__donut,
+  .landing-preview__bar-fill {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+
+  .landing-nav__link,
+  .landing-feature-card,
+  .landing-step-card,
+  .landing-pricing-card {
+    transition: none;
+  }
+
+  .landing-feature-card:hover,
+  .landing-step-card:hover,
+  .landing-pricing-card:hover {
+    transform: none;
+  }
+
+  .landing-nav__link:hover {
+    transform: none;
+  }
+
+  .landing-page .cb-button,
+  .landing-page .cb-button:hover:not(:disabled) {
+    transition: none;
+    transform: none;
+  }
+}
