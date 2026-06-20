@@ -87,16 +87,32 @@ function Logo() {
   );
 }
 
-function CTAButton({ children = "Criar conta grátis", secondary = false }) {
+function AuthButton({ children, mode = "register", variant = "primary" }) {
   const navigate = useNavigate();
   return (
     <button
       type="button"
-      onClick={() => navigate("/auth?mode=register")}
-      className={`cb-button ${secondary ? "cb-button--outline" : "cb-button--primary"}`}
+      onClick={() => navigate(`/auth?mode=${mode}`)}
+      className={`cb-button cb-button--${variant}`}
     >
       {children}
     </button>
+  );
+}
+
+function CTAButton({ children = "Criar conta grátis", secondary = false }) {
+  return (
+    <AuthButton variant={secondary ? "outline" : "primary"}>
+      {children}
+    </AuthButton>
+  );
+}
+
+function LoginButton({ variant = "ghost" }) {
+  return (
+    <AuthButton mode="login" variant={variant}>
+      Entrar
+    </AuthButton>
   );
 }
 
@@ -121,6 +137,7 @@ function Header() {
               {label}
             </button>
           ))}
+          <LoginButton />
           <CTAButton />
         </nav>
       </div>
@@ -187,6 +204,7 @@ function Hero() {
         </p>
         <div className="landing-hero__actions">
           <CTAButton />
+          <LoginButton variant="outline" />
           <button
             type="button"
             onClick={() => scrollToSection("como-funciona")}
@@ -321,7 +339,10 @@ export default function LandingPage() {
               <h2>Comece pelo seu próximo extrato.</h2>
               <p>Crie uma conta grátis e use suas primeiras análises para entender seu mês.</p>
             </div>
-            <CTAButton />
+            <div className="landing-final-card__actions">
+              <LoginButton variant="outline" />
+              <CTAButton />
+            </div>
           </div>
         </section>
       </main>

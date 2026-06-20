@@ -1220,6 +1220,12 @@
   font-size: 14px;
 }
 
+.landing-final-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 @media (max-width: 860px) {
   .landing-header {
     position: static;
